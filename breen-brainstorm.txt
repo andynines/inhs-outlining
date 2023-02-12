@@ -1,0 +1,91 @@
+Record cumulative chain code of angle
+Voronoi diagrams
+Need to try some morphology next
+
+incremental angles in sliding window
+do side-by-side of the outlines old vs. new
+
+
+How is this going to work for catfish and other dark fish?
+
+HIDDEN MARKOV MODELS FOR RECOGNIZING COMMON CONTOURS? Handwriting recognition parallel
+
+Do we want open mouths included in outline?
+
+Relevant: the BGNN GitHub org is already doing some morphological analysis here: https://github.com/hdr-bgnn/Morphology-analysis. If we lifted this code for just the outline, would it be any good? Apparently not. It doesn't dig into the fins, which is what we need. Those intricacies in the edges of the fins do a lot to help us classify fish.
+
+Given a pixel, what is the distance in the color space between it and its 4/8 neighbors?
+An edge in an intensity image is defined by some threshold. In a multidimensional color space, is there an analogous idea?
+Find all pixels where that distance is beyond some threshold.
+Alternatively, determine a global background color and pull stuff out
+Otsu thresholding provides foreground and background.
+What is the average background color, given that? Find the dist between every pixel and that average background. Alternative approach
+Joel did something similar when computing contrast.
+Look into the literature for someone who's done similar work.
+
+Alternatively, a level set evolution with a velocity proportional to distances?
+As a boundary pixel, look at your non-boundary, non-interior neighbors. "exterior", background pixel
+If this distance is below a certain threshold, then the exterior pixel becomes the new boundary
+A more iterative process based on an initial guess
+Oh, and we'd also want to look at interior neighbors because you could be over-segmenting
+
+To compute curvature on a chain code, hit it with a gaussian filter to blur it, turn it into grayscale, and then compute iso line curvatures on that grayscale image using preexisting formulas
+Fourier analysis on the results? Look at what are the coefficients for different frequencies of chain codes; becomes a signal processing problem
+What's the right spatial resolution where there's distinguishing qualities of the fish's curvature?
+Discontinuities in curvature at e.g. the tip of a shark's back fin
+Potential feature: distance between extremal points
+1. extracting outline
+2. computing curvature -> initial "signal" that we could use
+https://arxiv.org/pdf/1407.7340.pdf
+https://math.mit.edu/classes/18.086/2007/levelsetnotes.pdf
+
+key phrase: level set method / level set curvature
+equation 4 in his given paper to compute curvatures of gaussian-blurred version of jagged binary image
+
+Images at different resolutions can offer different information. What's the right spatial resolution for this analysis? Another open question.
+
+Maybe once we have all the freeman chains, we downsample them. (Average every two samples, e.g.)
+Hey you could use the extracted names (from images that have friendly name formats) for classification by outline and genus, species, etc.
+
+Where on the boundary should the freeman code begin? We have to normalize all them. And Joel has code for knowing which way a fish is pointing. So let's start at the extreme left point, for instance
+
+We have the segmentation boundary so at any point we know in what general direction "out" is
+
+Notion of uniform tension of a string wrapped around the fish
+Breen looked into something like it a long time ago (see paper) but probably overcomplex
+https://ieeexplore.ieee.org/document/146367
+
+How does the iterative outlining process converge? Could there be oscillations preventing it from ever converging?
+How to distill boundary down to a feature vector? Maybe Fourier coefficients?
+
+And if I'm gonna do that plotting stuff, try to visualize background vs foreground in the color space
+Hopefully they're well separated, and maybe the fish clumps in one area
+Could do SVM on that stuff to find best way to separate them
+One of RGB or HSV might be separated than the other
+
+Otsu maximally separates in V dimension of HSV
+Adding more dimensionality gives the ML algo more to work with
+
+Also just try some function from OpenCV or Scikit to compute image contours
+
+So far in ML ready data processing: removed a couple bad synonym eggs (maybe don't mention that) and several one-worders. Rest are all good.
+The remaining boys are going to be slimmed down even further by which ones have detectable fish and a well-fitting bounding box.
+
+Consider taking parts of the outline encoding as separate features, like first 10 chars, second 10 chars, etc.
+Define some sort of difference operation between encodings to find differences?
+
+Steps
+get bounding box from detectron
+adjust somehow
+redo otsu to come up with new threshold
+will also reextend the bounding box if encessary and restart
+
+Also lit review!
+
+Otsu absed on color? CV might already do this
+
+Ask ChatGPT
+about color image segmentation and other stuff
+
+For the love of god, do the otsu in not grayscale and come up with a non-magic number adjustmetn for thesholding
+
