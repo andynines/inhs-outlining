@@ -1,18 +1,30 @@
-Record cumulative chain code of angle
 Voronoi diagrams
-Need to try some morphology next
 
-incremental angles in sliding window
-do side-by-side of the outlines old vs. new
+FIRST TODO: normalize scale! read in the scale measurement boys to the database and then do the adjustment before mask rotation. Need to choose a target scale first though.
 
+Biggest magnitude numbers are most important
+Compare error rates between trans with ten biggest versus all thousand and see difference
+And look at error rate between trans and og function
+fourier trans goes form time to frequency
+We have to take some largest n because different fish will have diff # freqs
+What is the delta t? In some cases it's actually root 2 and not 1 (diagonals) maybe consider taking 4-neighbor outline?
+
+need to understand the transform results better - do some reading here
+
+Big question: what are the frequencies?
 
 How is this going to work for catfish and other dark fish?
 
 HIDDEN MARKOV MODELS FOR RECOGNIZING COMMON CONTOURS? Handwriting recognition parallel
 
-Do we want open mouths included in outline?
+See which is better for getting fish direction: primary axis, or snout_vec calculation in their code which requires other stuff I can get from the metadata.
+
+Get coeffs of 10 largest frequencies and throw into an SVM.
+Can out std multiplier affect final ML results?
 
 Relevant: the BGNN GitHub org is already doing some morphological analysis here: https://github.com/hdr-bgnn/Morphology-analysis. If we lifted this code for just the outline, would it be any good? Apparently not. It doesn't dig into the fins, which is what we need. Those intricacies in the edges of the fins do a lot to help us classify fish.
+
+Need to note somewhere that I zoomed out of the detectron segmentations by 10 px on each side.
 
 Given a pixel, what is the distance in the color space between it and its 4/8 neighbors?
 An edge in an intensity image is defined by some threshold. In a multidimensional color space, is there an analogous idea?
@@ -44,11 +56,6 @@ equation 4 in his given paper to compute curvatures of gaussian-blurred version 
 
 Images at different resolutions can offer different information. What's the right spatial resolution for this analysis? Another open question.
 
-Maybe once we have all the freeman chains, we downsample them. (Average every two samples, e.g.)
-Hey you could use the extracted names (from images that have friendly name formats) for classification by outline and genus, species, etc.
-
-Where on the boundary should the freeman code begin? We have to normalize all them. And Joel has code for knowing which way a fish is pointing. So let's start at the extreme left point, for instance
-
 We have the segmentation boundary so at any point we know in what general direction "out" is
 
 Notion of uniform tension of a string wrapped around the fish
@@ -66,9 +73,8 @@ One of RGB or HSV might be separated than the other
 Otsu maximally separates in V dimension of HSV
 Adding more dimensionality gives the ML algo more to work with
 
-Also just try some function from OpenCV or Scikit to compute image contours
-
 So far in ML ready data processing: removed a couple bad synonym eggs (maybe don't mention that) and several one-worders. Rest are all good.
+I also dropped a bunch who lacked a "side" value because detectron couldn't find their ruler or something.
 The remaining boys are going to be slimmed down even further by which ones have detectable fish and a well-fitting bounding box.
 
 Consider taking parts of the outline encoding as separate features, like first 10 chars, second 10 chars, etc.
@@ -83,9 +89,4 @@ will also reextend the bounding box if encessary and restart
 Also lit review!
 
 Otsu absed on color? CV might already do this
-
-Ask ChatGPT
-about color image segmentation and other stuff
-
-For the love of god, do the otsu in not grayscale and come up with a non-magic number adjustmetn for thesholding
 
