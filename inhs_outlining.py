@@ -23,9 +23,9 @@ def angle_between(v1, v2):
 
 def extract_k_most_significant_frequencies(signal, k):
     n = len(signal)
-    dft = list(zip(np.fft.fft(signal), n * np.fft.fftfreq(n)))  # TODO: Do some sort of rounding on the product
+    dft = list(zip(np.fft.fft(signal), n * np.fft.fftfreq(n)))
     highest_term_freqs = sorted(dft[1:n // 2], key=lambda p: -p[0])[:k]
-    return np.array(highest_term_freqs)[:, 1].astype(float)  # TODO: Make sure this cast is okay. It's making warnings!
+    return np.round(np.array(highest_term_freqs)[:, 1].real)
 
 
 def make_dataset(genus, species):
@@ -162,8 +162,8 @@ class Fish(Base):
 
     @cached_property
     def normalized_mask(self) -> np.array:
-        pad = 50  # TODO: calculate exactly what this should be as a function of the image dimensions.
         height, width = self.mask.shape
+        pad = max(height, width)
         adj_dim = (height + 2 * pad, width + 2 * pad)
         result = np.zeros(adj_dim, np.uint8)
         result[pad: pad + height, pad:pad + width] = self.mask[:, :]
@@ -178,7 +178,7 @@ class Fish(Base):
             result = cv.flip(result, 1)
         scale_factor = self.calc_avg_scale() / self.scale
         result = cv.resize(result, None, fx=scale_factor, fy=scale_factor, interpolation=cv.INTER_CUBIC)
-        _, result = cv.threshold(result, 127, 255, cv.THRESH_BINARY)  # TODO: Consider a more intelligent resizing?
+        _, result = cv.threshold(result, 127, 255, cv.THRESH_BINARY)
         return result
 
     @cached_property
@@ -209,7 +209,7 @@ class Fish(Base):
         return extract_k_most_significant_frequencies(self.signal, self.feature_count)
 
     @cached_property
-    def complex_features(self):  # TODO: Try using this for features instead and see if it performs better.
+    def complex_features(self):
         complex_outline = np.empty(self.normalized_outline.shape[:-1], dtype=complex)
         complex_outline.real = self.normalized_outline[:, 0]
         complex_outline.imag = self.normalized_outline[:, 1]
@@ -237,28 +237,3 @@ class Fish(Base):
 
 if __name__ == "__main__":
     pass
-
-"""
-class1 = make_dataset("Enneacanthus", "Obesus")
-class2 = make_dataset("Notropis", "Asperifrons")
-data = np.concatenate((class1, class2), axis=0)
-np.savetxt("dataset.csv", data, fmt='%s', delimiter=',')
-num_features = data.shape[1] - 1
-np.random.seed(0)
-np.random.shuffle(data)
-train = data[:len(data) - 1]
-xtrain = train[:, :num_features].astype(float)
-ytrain = train[:, num_features]
-test = data[len(data) - 1:]
-xtest = test[:, :num_features].astype(float)
-ytest = test[:, num_features]
-models = [
-    LogisticRegression(random_state=0),
-    SVC(kernel="linear", random_state=0),
-    KNeighborsClassifier(n_neighbors=1)
-]
-for clf in models:
-    clf.fit(xtrain, ytrain)
-    predictions = clf.predict(xtest)
-    print(clf, "accuracy:", np.sum(predictions == ytest) / len(predictions))
-"""
