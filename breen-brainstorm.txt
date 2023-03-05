@@ -1,39 +1,39 @@
 Voronoi diagrams
 
-FIRST TODO: normalize scale! read in the scale measurement boys to the database and then do the adjustment before mask rotation. Need to choose a target scale first though.
+What does each feature vector mean, how do we best distinguish them?
+Leave-one-out cross validation on all potential methods
+How accurate can we get?
+Keep sample sizes equal.
+Explore the other knobs too, like neighborhood size.
+
+Need to do a signal encoding and reconstruction, then assert it's correct and visualize it.
+There's multiple encoding possibilities now; one that's Freeman style and one that's based on Fourier descriptors
+
+for non-complex outlines (like what we use to compute features in the traditional function and not complex_features) we can use np.rfft which should be faster
+
+PARAMETERS THAT (COULD) AFFECT DATA LEARNABILITY:
+Number of largest frequencies extracted (AKA number of features). This is tired to reconstruction accuracy.
+	We'll ignore use of negative frequency terms for now
+Number of classes, granularity of classes (genus, genus-species), and size of classes
+Classifier type
+Which features used (Breen features or Fourier descriptors)
+Neighborhood type (4 or 8)
+Scaling interpolation method
+Target normalization scale
+Spatial/image resolution
+Std dev thresholding multiplier
 
 Biggest magnitude numbers are most important
 Compare error rates between trans with ten biggest versus all thousand and see difference
 And look at error rate between trans and og function
-fourier trans goes form time to frequency
-We have to take some largest n because different fish will have diff # freqs
-What is the delta t? In some cases it's actually root 2 and not 1 (diagonals) maybe consider taking 4-neighbor outline?
+
+cross validate to explore all these.
 
 need to understand the transform results better - do some reading here
 
-Big question: what are the frequencies?
-
-How is this going to work for catfish and other dark fish?
-
 HIDDEN MARKOV MODELS FOR RECOGNIZING COMMON CONTOURS? Handwriting recognition parallel
 
-See which is better for getting fish direction: primary axis, or snout_vec calculation in their code which requires other stuff I can get from the metadata.
-
-Get coeffs of 10 largest frequencies and throw into an SVM.
-Can out std multiplier affect final ML results?
-
-Relevant: the BGNN GitHub org is already doing some morphological analysis here: https://github.com/hdr-bgnn/Morphology-analysis. If we lifted this code for just the outline, would it be any good? Apparently not. It doesn't dig into the fins, which is what we need. Those intricacies in the edges of the fins do a lot to help us classify fish.
-
-Need to note somewhere that I zoomed out of the detectron segmentations by 10 px on each side.
-
-Given a pixel, what is the distance in the color space between it and its 4/8 neighbors?
-An edge in an intensity image is defined by some threshold. In a multidimensional color space, is there an analogous idea?
-Find all pixels where that distance is beyond some threshold.
-Alternatively, determine a global background color and pull stuff out
-Otsu thresholding provides foreground and background.
-What is the average background color, given that? Find the dist between every pixel and that average background. Alternative approach
-Joel did something similar when computing contrast.
-Look into the literature for someone who's done similar work.
+Note that I zoomed out of the detectron segmentations by 10 px on each side.
 
 Alternatively, a level set evolution with a velocity proportional to distances?
 As a boundary pixel, look at your non-boundary, non-interior neighbors. "exterior", background pixel
@@ -54,21 +54,11 @@ https://math.mit.edu/classes/18.086/2007/levelsetnotes.pdf
 key phrase: level set method / level set curvature
 equation 4 in his given paper to compute curvatures of gaussian-blurred version of jagged binary image
 
-Images at different resolutions can offer different information. What's the right spatial resolution for this analysis? Another open question.
-
 We have the segmentation boundary so at any point we know in what general direction "out" is
 
 Notion of uniform tension of a string wrapped around the fish
 Breen looked into something like it a long time ago (see paper) but probably overcomplex
 https://ieeexplore.ieee.org/document/146367
-
-How does the iterative outlining process converge? Could there be oscillations preventing it from ever converging?
-How to distill boundary down to a feature vector? Maybe Fourier coefficients?
-
-And if I'm gonna do that plotting stuff, try to visualize background vs foreground in the color space
-Hopefully they're well separated, and maybe the fish clumps in one area
-Could do SVM on that stuff to find best way to separate them
-One of RGB or HSV might be separated than the other
 
 Otsu maximally separates in V dimension of HSV
 Adding more dimensionality gives the ML algo more to work with
@@ -80,13 +70,5 @@ The remaining boys are going to be slimmed down even further by which ones have 
 Consider taking parts of the outline encoding as separate features, like first 10 chars, second 10 chars, etc.
 Define some sort of difference operation between encodings to find differences?
 
-Steps
-get bounding box from detectron
-adjust somehow
-redo otsu to come up with new threshold
-will also reextend the bounding box if encessary and restart
-
 Also lit review!
-
-Otsu absed on color? CV might already do this
 

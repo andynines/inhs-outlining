@@ -23,7 +23,7 @@ def angle_between(v1, v2):
 
 def extract_k_most_significant_frequencies(signal, k):
     n = len(signal)
-    dft = list(zip(np.fft.fft(signal), n * np.fft.fftfreq(n)))
+    dft = list(zip(np.fft.fft(signal), n * np.fft.fftfreq(n)))  # TODO: Do some sort of rounding on the product
     highest_term_freqs = sorted(dft[1:n // 2], key=lambda p: -p[0])[:k]
     return np.array(highest_term_freqs)[:, 1].astype(float)  # TODO: Make sure this cast is okay. It's making warnings!
 
@@ -84,6 +84,10 @@ class Fish(Base):
             lambda s: s.query(cls.genus, cls.species, func.count(cls.id)).group_by(cls.genus, cls.species).all())
         counts.sort(key=lambda count: -count[2])
         return {f"{count[0]} {count[1]}": count[2] for count in counts}
+
+    @classmethod
+    def example_of(cls, genus, species):
+        return cls.query(select(cls).where((cls.genus == genus) & (cls.species == species)))[0]
 
     # IDs aren't purely numeric! Some have underscores in them.
     id: Mapped[str] = mapped_column(String(50), primary_key=True)
@@ -210,6 +214,10 @@ class Fish(Base):
         complex_outline.real = self.normalized_outline[:, 0]
         complex_outline.imag = self.normalized_outline[:, 1]
         return extract_k_most_significant_frequencies(complex_outline, self.feature_count)
+
+    def show(self):
+        plt.imshow(self.cropped_im)
+        plt.show()
 
     def show_ax(self):
         im = self.cropped_im.copy()
