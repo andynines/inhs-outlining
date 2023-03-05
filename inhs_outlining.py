@@ -1,13 +1,16 @@
 from pathlib import Path
 import socket
-from sqlalchemy import LargeBinary, String, Float, create_engine, select, distinct
+from sqlalchemy import LargeBinary, String, Float, create_engine, select
+from sqlalchemy.sql import func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
 import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
 from werkzeug.utils import cached_property
 from sklearn.decomposition import PCA
+from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
 
 from typing import List, Tuple
 
@@ -16,6 +19,20 @@ def angle_between(v1, v2):
     v1 = v1 / np.linalg.norm(v1)
     v2 = v2 / np.linalg.norm(v2)
     return np.rad2deg(np.arctan2(np.cross(v1, v2), np.dot(v1, v2)))
+
+
+def extract_k_most_significant_frequencies(signal, k):
+    n = len(signal)
+    dft = list(zip(np.fft.fft(signal), n * np.fft.fftfreq(n)))
+    highest_term_freqs = sorted(dft[1:n // 2], key=lambda p: -p[0])[:k]
+    return np.array(highest_term_freqs)[:, 1].astype(float)  # TODO: Make sure this cast is okay. It's making warnings!
+
+
+def make_dataset(genus, species):
+    genus_fish = Fish.query(select(Fish).where((Fish.genus == genus) & (Fish.species == species)))
+    xs = np.array([fish.features for fish in genus_fish])
+    ys = np.array([f"{genus} {species}"] * len(xs)).reshape(-1, 1)
+    return np.concatenate((xs, ys), axis=1)
 
 
 def assert_is_lab_server():
@@ -31,10 +48,17 @@ class Fish(Base):
 
     engine = create_engine("sqlite:///fish.db")
 
+    avg_scale = None
+    feature_count = 10
+
+    @classmethod
+    def sesh(cls, callback):
+        with Session(cls.engine) as session:
+            return callback(session)
+
     @classmethod
     def query(cls, stmt):
-        with Session(cls.engine) as session:
-            return session.scalars(stmt).all()
+        return cls.sesh(lambda s: s.scalars(stmt).all())
 
     @classmethod
     def with_id(cls, fid: str):
@@ -44,11 +68,28 @@ class Fish(Base):
     def all(cls):
         return cls.query(select(cls))
 
+    @classmethod
+    def calc_avg_scale(cls):
+        if cls.avg_scale is None:
+            cls.avg_scale = cls.query(select(func.avg(cls.scale)))[0]
+        return cls.avg_scale
+
+    @classmethod
+    def count_fish_per_genus(cls):
+        return dict(cls.sesh(lambda s: s.query(cls.genus, func.count(cls.genus)).group_by(cls.genus).all()))
+
+    @classmethod
+    def count_unique_species(cls):
+        counts = cls.sesh(
+            lambda s: s.query(cls.genus, cls.species, func.count(cls.id)).group_by(cls.genus, cls.species).all())
+        counts.sort(key=lambda count: -count[2])
+        return {f"{count[0]} {count[1]}": count[2] for count in counts}
+
     # IDs aren't purely numeric! Some have underscores in them.
     id: Mapped[str] = mapped_column(String(50), primary_key=True)
     genus: Mapped[str] = mapped_column(String(50))
     species: Mapped[str] = mapped_column(String(50))
-    image: Mapped[bytes] = mapped_column(LargeBinary)
+    image: Mapped[bytes] = mapped_column(LargeBinary)  # = cv.imencode('.jpg', img)[1].tobytes(),
     side: Mapped[str] = mapped_column(String(10))
     scale: Mapped[float] = mapped_column(Float)
 
@@ -57,6 +98,12 @@ class Fish(Base):
 
     @cached_property
     def cropped_im(self) -> np.array:
+        """
+        img[
+          max(0, bbox[1] - BBOX_PAD_PX): bbox[3] + BBOX_PAD_PX,
+          max(0, bbox[0] - BBOX_PAD_PX): bbox[2] + BBOX_PAD_PX,
+        ]
+        """
         nparr = np.frombuffer(self.image, np.uint8)
         im = cv.imdecode(nparr, cv.IMREAD_COLOR)
         return cv.cvtColor(im, cv.COLOR_BGR2RGB)
@@ -95,6 +142,12 @@ class Fish(Base):
         return mask
 
     @cached_property
+    def centroid(self) -> Tuple[int, int]:
+        moments = cv.moments(self.mask)
+        centroid = np.round([moments["m10"] / moments["m00"], moments["m01"] / moments["m00"]])
+        return int(centroid[0]), int(centroid[1])
+
+    @cached_property
     def primary_axis(self) -> np.array:
         points = np.argwhere(self.mask == 0xff)
         pca = PCA(n_components=2)
@@ -105,7 +158,7 @@ class Fish(Base):
 
     @cached_property
     def normalized_mask(self) -> np.array:
-        pad = 50  # TODO: calculate exactly what this should be to prevent any fish pixel from rotating out of bounds. It's a function of the image dimensions.
+        pad = 50  # TODO: calculate exactly what this should be as a function of the image dimensions.
         height, width = self.mask.shape
         adj_dim = (height + 2 * pad, width + 2 * pad)
         result = np.zeros(adj_dim, np.uint8)
@@ -119,6 +172,9 @@ class Fish(Base):
         result = cv.warpAffine(result, rot, np.flip(adj_dim))
         if self.side == "right":
             result = cv.flip(result, 1)
+        scale_factor = self.calc_avg_scale() / self.scale
+        result = cv.resize(result, None, fx=scale_factor, fy=scale_factor, interpolation=cv.INTER_CUBIC)
+        _, result = cv.threshold(result, 127, 255, cv.THRESH_BINARY)  # TODO: Consider a more intelligent resizing?
         return result
 
     @cached_property
@@ -134,12 +190,6 @@ class Fish(Base):
         return np.roll(outline, -outline.index(target_origin), axis=0)
 
     @cached_property
-    def centroid(self) -> Tuple[int, int]:
-        moments = cv.moments(self.mask)
-        centroid = np.round([moments["m10"] / moments["m00"], moments["m01"] / moments["m00"]])
-        return int(centroid[0]), int(centroid[1])
-
-    @cached_property
     def signal(self) -> List[float]:
         result = []
         prev_delta = self.normalized_outline[1] - self.normalized_outline[0]
@@ -150,7 +200,18 @@ class Fish(Base):
             prev_delta = delta
         return result
 
-    def show_ax(self) -> None:
+    @cached_property
+    def features(self):
+        return extract_k_most_significant_frequencies(self.signal, self.feature_count)
+
+    @cached_property
+    def complex_features(self):  # TODO: Try using this for features instead and see if it performs better.
+        complex_outline = np.empty(self.normalized_outline.shape[:-1], dtype=complex)
+        complex_outline.real = self.normalized_outline[:, 0]
+        complex_outline.imag = self.normalized_outline[:, 1]
+        return extract_k_most_significant_frequencies(complex_outline, self.feature_count)
+
+    def show_ax(self):
         im = self.cropped_im.copy()
         cv.line(im, self.centroid,
                 (self.centroid + np.round(self.primary_axis * self.cropped_im.shape[0])).astype(int), (0, 0xff, 0),
@@ -159,61 +220,37 @@ class Fish(Base):
         plt.imshow(im)
         plt.show()
 
+    def show_outline(self):
+        mask = cv.cvtColor(self.normalized_mask.copy(), cv.COLOR_GRAY2RGB)
+        cv.drawContours(mask, [self.normalized_outline], -1, (0, 0xff, 0), thickness=2)
+        plt.imshow(mask)
+        plt.show()
+
 
 if __name__ == "__main__":
-    fish = Fish.with_id("45942")
-    plt.imshow(fish.normalized_mask)
-    plt.show()
-
+    pass
 
 """
-def classify(data):
-    np.random.shuffle(data)
-    test = data[:len(data)//3]
-    train = data[len(data)//3:]
-    clf = svm.SVC(kernel="linear")
-    clf.fit(train[:, :3], train[:, 3])
-    predictions = clf.predict(test[:, :3])
-    expecteds = test[:, 3]
-    print("Accuracy:", np.sum(predictions == expecteds) / len(predictions))
-"""
-
-"""
-def create_db() -> None:
-    NAME_CSV = Path("./ml-ready.csv")
-    METADATA_JSON = Path("./ml-ready-metadata.json")
-    BBOX_PAD_PX = 10
-
-    engine = create_engine(DB, echo=True)
-    Base.metadata.create_all(engine)
-
-    with open(NAME_CSV, 'r') as name_csv_file:
-        name_csv = [row for row in csv.reader(name_csv_file)]
-
-    with open(METADATA_JSON, 'r') as metadata_json_file:
-        metadata_json = json.load(metadata_json_file)
-
-    with Session(engine) as session:
-        for row in name_csv[1:]:
-            inhs_id = row[1].replace(".jpg", "")
-            print(inhs_id, end=' ')
-            if not metadata_json[inhs_id]["has_fish"]:
-                continue
-            fid = inhs_id.replace("INHS_FISH_", "")
-            genus = row[2]
-            species = row[3]
-            bbox = metadata_json[inhs_id]["fish"][0]["bbox"]
-            img = cv.imread(str(INHSFish.find_image(fid)))
-            cropped_img = img[
-                          max(0, bbox[1] - BBOX_PAD_PX): bbox[3] + BBOX_PAD_PX,
-                          max(0, bbox[0] - BBOX_PAD_PX): bbox[2] + BBOX_PAD_PX,
-                          ]
-            new_fish_record = INHSFish(
-                id=fid,
-                genus=genus,
-                species=species,
-                image=cv.imencode('.jpg', cropped_img)[1].tobytes(),
-            )
-            session.add(new_fish_record)
-        session.commit()
+class1 = make_dataset("Enneacanthus", "Obesus")
+class2 = make_dataset("Notropis", "Asperifrons")
+data = np.concatenate((class1, class2), axis=0)
+np.savetxt("dataset.csv", data, fmt='%s', delimiter=',')
+num_features = data.shape[1] - 1
+np.random.seed(0)
+np.random.shuffle(data)
+train = data[:len(data) - 1]
+xtrain = train[:, :num_features].astype(float)
+ytrain = train[:, num_features]
+test = data[len(data) - 1:]
+xtest = test[:, :num_features].astype(float)
+ytest = test[:, num_features]
+models = [
+    LogisticRegression(random_state=0),
+    SVC(kernel="linear", random_state=0),
+    KNeighborsClassifier(n_neighbors=1)
+]
+for clf in models:
+    clf.fit(xtrain, ytrain)
+    predictions = clf.predict(xtest)
+    print(clf, "accuracy:", np.sum(predictions == ytest) / len(predictions))
 """
