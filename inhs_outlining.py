@@ -191,7 +191,7 @@ class Fish(Base):
             "Inadmissible fish; expand ROI"
         minx = min([p[0] for p in outline])
         target_origin = min([p for p in outline if p[0] == minx], key=lambda p: p[1])
-        return np.roll(outline, -outline.index(target_origin), axis=0)
+        return np.roll(outline, -outline.index(target_origin), axis=0) - target_origin
 
     @cached_property
     def signal(self) -> List[float]:
