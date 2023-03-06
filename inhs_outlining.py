@@ -1,7 +1,7 @@
 from pathlib import Path
 import socket
 from sqlalchemy import LargeBinary, String, Float, create_engine, select
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func, functions
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
 import cv2 as cv
 import numpy as np
@@ -48,8 +48,10 @@ class Fish(Base):
 
     engine = create_engine("sqlite:///fish.db")
 
-    avg_scale = None
     feature_count = 10
+    target_scale = 76  # px/cm. Current value is the average scale of all records in fish.db.
+    outline_connectivity = 8
+    dark_thresh_mult = 0.25
 
     @classmethod
     def sesh(cls, callback):
@@ -67,12 +69,6 @@ class Fish(Base):
     @classmethod
     def all(cls):
         return cls.query(select(cls))
-
-    @classmethod
-    def calc_avg_scale(cls):
-        if cls.avg_scale is None:
-            cls.avg_scale = cls.query(select(func.avg(cls.scale)))[0]
-        return cls.avg_scale
 
     @classmethod
     def count_fish_per_genus(cls):
@@ -132,11 +128,10 @@ class Fish(Base):
         dark_px = satim[satim < otsu_thresh].flatten()
         dark_mean = np.mean(dark_px)
         dark_std = np.std(dark_px)
-        sat_std_bias_factor = 0.25
-        new_thresh = dark_mean + sat_std_bias_factor * dark_std
+        new_thresh = dark_mean + self.dark_thresh_mult * dark_std
         _, mask = cv.threshold(satim, new_thresh, 0xff, cv.THRESH_BINARY)
-        num_labels, labels, stats, centroids = cv.connectedComponentsWithStats(mask, connectivity=8,
-                                                                               ltype=cv.CV_32S)
+        num_labels, labels, stats, centroids = \
+            cv.connectedComponentsWithStats(mask, connectivity=self.outline_connectivity, ltype=cv.CV_32S)
         label_areas = [(i, stats[i, cv.CC_STAT_AREA]) for i in range(num_labels)]
         label_areas.sort(key=lambda p: -p[1])
         mask[(labels != label_areas[0][0]) & (labels != label_areas[1][0])] = 0
@@ -176,7 +171,7 @@ class Fish(Base):
         result = cv.warpAffine(result, rot, np.flip(adj_dim))
         if self.side == "right":
             result = cv.flip(result, 1)
-        scale_factor = self.calc_avg_scale() / self.scale
+        scale_factor = self.target_scale / self.scale
         result = cv.resize(result, None, fx=scale_factor, fy=scale_factor, interpolation=cv.INTER_CUBIC)
         _, result = cv.threshold(result, 127, 255, cv.THRESH_BINARY)
         return result
@@ -191,7 +186,7 @@ class Fish(Base):
             "Inadmissible fish; expand ROI"
         minx = min([p[0] for p in outline])
         target_origin = min([p for p in outline if p[0] == minx], key=lambda p: p[1])
-        return np.roll(outline, -outline.index(target_origin), axis=0) - target_origin
+        return np.roll(outline, -outline.index(target_origin), axis=0)
 
     @cached_property
     def signal(self) -> List[float]:

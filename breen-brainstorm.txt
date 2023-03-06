@@ -12,15 +12,14 @@ There's multiple encoding possibilities now; one that's Freeman style and one th
 for non-complex outlines (like what we use to compute features in the traditional function and not complex_features) we can use np.rfft which should be faster
 
 PARAMETERS THAT (COULD) AFFECT DATA LEARNABILITY:
-Number of largest frequencies extracted (AKA number of features). This is tired to reconstruction accuracy.
+Number of largest frequencies extracted (AKA number of features). This is tied to reconstruction accuracy.
 	We'll ignore use of negative frequency terms for now
 Number of classes, granularity of classes (genus, genus-species), and size of classes
-Classifier type
+Classifier type (fix as KNN for now)
 Which features used (Breen features or Fourier descriptors)
 Neighborhood type (4 or 8)
 Scaling interpolation method
-Target normalization scale
-Spatial/image resolution
+Spatial/image resolution / Target normalization scale
 Std dev thresholding multiplier
 
 Biggest magnitude numbers are most important
