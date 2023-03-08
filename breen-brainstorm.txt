@@ -1,34 +1,25 @@
 Voronoi diagrams
 
-What does each feature vector mean, how do we best distinguish them?
-Leave-one-out cross validation on all potential methods
-How accurate can we get?
-Keep sample sizes equal.
-Explore the other knobs too, like neighborhood size.
+Double check that negative frequencies aren't important
+Different distanc emetrics
+Visualize 3-dimenstional feature space for lots of samples and multiple classes
+Try knn with k=3, 5, ...
+Test knn edge cases like 3 different classes like k=3
+For 100 samples, at least k=5
+Nearest centroid
+Send stuff to Prof. Breen about Fourier Descriptors
+Am I actually finding fourier descriptors or just some wierd intermediate thing?
+todo: get a better understanding of fourier descriptors and explain to prof. breen
+how do descriptors compare to our dominant frequencies in terms of # features required?
+Play with https://cbia.fi.muni.cz/software/fourier-descriptors-2d.html
+Do 4-neighborhood outline cleaning.
+Technique for visualizing high dimensional spaces?
+Load a fish into the Czech program
 
 Need to do a signal encoding and reconstruction, then assert it's correct and visualize it.
 There's multiple encoding possibilities now; one that's Freeman style and one that's based on Fourier descriptors
 
 for non-complex outlines (like what we use to compute features in the traditional function and not complex_features) we can use np.rfft which should be faster
-
-PARAMETERS THAT (COULD) AFFECT DATA LEARNABILITY:
-Number of largest frequencies extracted (AKA number of features). This is tied to reconstruction accuracy.
-	We'll ignore use of negative frequency terms for now
-Number of classes, granularity of classes (genus, genus-species), and size of classes
-Classifier type (fix as KNN for now)
-Which features used (Breen features or Fourier descriptors)
-Neighborhood type (4 or 8)
-Scaling interpolation method
-Spatial/image resolution / Target normalization scale
-Std dev thresholding multiplier
-
-Biggest magnitude numbers are most important
-Compare error rates between trans with ten biggest versus all thousand and see difference
-And look at error rate between trans and og function
-
-cross validate to explore all these.
-
-need to understand the transform results better - do some reading here
 
 HIDDEN MARKOV MODELS FOR RECOGNIZING COMMON CONTOURS? Handwriting recognition parallel
 

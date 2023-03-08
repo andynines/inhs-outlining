@@ -1,7 +1,7 @@
 from pathlib import Path
 import socket
 from sqlalchemy import LargeBinary, String, Float, create_engine, select
-from sqlalchemy.sql import func, functions
+from sqlalchemy.sql import func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
 import cv2 as cv
 import numpy as np
@@ -11,6 +11,7 @@ from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
+import pyefd
 
 from typing import List, Tuple
 
@@ -25,7 +26,7 @@ def extract_k_most_significant_frequencies(signal, k):
     n = len(signal)
     dft = list(zip(np.fft.fft(signal), n * np.fft.fftfreq(n)))
     highest_term_freqs = sorted(dft[1:n // 2], key=lambda p: -p[0])[:k]
-    return np.round(np.array(highest_term_freqs)[:, 1].real)
+    return np.round(np.array(highest_term_freqs)[:, 1])
 
 
 def make_dataset(genus, species):
@@ -48,10 +49,11 @@ class Fish(Base):
 
     engine = create_engine("sqlite:///fish.db")
 
-    feature_count = 10
-    target_scale = 76  # px/cm. Current value is the average scale of all records in fish.db.
-    outline_connectivity = 8
+    feature_count = 3
+    target_scale = 20  # px/cm. The average of all records in fish.db is just under 76 px/cm.
+    outline_connectivity = 4
     dark_thresh_mult = 0.25
+    scl_interp_method = cv.INTER_CUBIC
 
     @classmethod
     def sesh(cls, callback):
@@ -172,12 +174,12 @@ class Fish(Base):
         if self.side == "right":
             result = cv.flip(result, 1)
         scale_factor = self.target_scale / self.scale
-        result = cv.resize(result, None, fx=scale_factor, fy=scale_factor, interpolation=cv.INTER_CUBIC)
+        result = cv.resize(result, None, fx=scale_factor, fy=scale_factor, interpolation=self.scl_interp_method)
         _, result = cv.threshold(result, 127, 255, cv.THRESH_BINARY)
         return result
 
     @cached_property
-    def normalized_outline(self) -> np.array:
+    def normalized_outline(self):
         contours, _ = cv.findContours(self.normalized_mask, cv.RETR_LIST, cv.CHAIN_APPROX_NONE)
         outline = max(contours, key=cv.contourArea)
         outline = [(pt[0][0], pt[0][1]) for pt in outline]
@@ -210,6 +212,18 @@ class Fish(Base):
         complex_outline.imag = self.normalized_outline[:, 1]
         return extract_k_most_significant_frequencies(complex_outline, self.feature_count)
 
+    @cached_property
+    def descriptors(self):  # TODO: not really integrated with everything else
+        complex_outline = np.empty(self.normalized_outline.shape[:-1], dtype=complex)
+        complex_outline.real = self.normalized_outline[:, 0]
+        complex_outline.imag = self.normalized_outline[:, 1]
+        return np.fft.fft(complex_outline)
+
+    @cached_property
+    def efds(self):
+        coeffs = pyefd.elliptic_fourier_descriptors(self.normalized_outline, order=10, normalize=True)
+        return coeffs.flatten()[3:]
+
     def show(self):
         plt.imshow(self.cropped_im)
         plt.show()
@@ -228,6 +242,11 @@ class Fish(Base):
         cv.drawContours(mask, [self.normalized_outline], -1, (0, 0xff, 0), thickness=2)
         plt.imshow(mask)
         plt.show()
+
+    def save_outline(self):
+        outline_im = np.zeros(self.normalized_mask.shape)
+        cv.drawContours(outline_im, [self.normalized_outline], -1, (0xff, 0xff, 0xff), thickness=1)
+        cv.imwrite(f"INHS_FISH{self.id}_outline.png", outline_im)
 
 
 if __name__ == "__main__":
