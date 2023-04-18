@@ -67,10 +67,16 @@ def contour_error(contour1, contour2):
     )
 
 
+def encode(contour, num_harmonics):
+    efds = pyefd.elliptic_fourier_descriptors(contour, order=num_harmonics, normalize=False)
+    efds, trans = pyefd.normalize_efd(efds, size_invariant=False, return_transformation=True)
+    return efds, trans
+
+
 def reconstruct(efds, num_points):
-    approximation = pyefd.reconstruct_contour(efds, num_points=num_points)
-    approximation = -np.round(approximation).astype(int)
-    return approximation
+    reconstruction = pyefd.reconstruct_contour(efds, num_points=num_points)
+    reconstruction = np.round(reconstruction).astype(int)
+    return reconstruction
 
 
 def assert_is_lab_server():
@@ -87,14 +93,29 @@ class Fish(Base):
     engine = create_engine("sqlite:///fish.db")
 
     breen_feature_count = 40
-    target_scale = 40  # px/cm. The average of all records in fish.db is just under 76 px/cm.
+    target_scale = 40  # The average of all records in fish.db is just under 76 px/cm.
     outline_connectivity = 4
     dark_thresh_mult = 0.5
     close_kern_size = 5
     close_iters = 2
     scl_interp_method = cv.INTER_CUBIC
-    reconstruction_tol = 0.1 * target_scale  # cm * px/cm = px
-    harmonic_limit = 100
+    reconstruction_tol = 0.1 * target_scale
+    harmonics_limit = 100
+
+    @classmethod
+    def show_params(cls):
+        just = 40
+        print(
+            "Target scale:".ljust(just) + f"{cls.target_scale} px/cm",
+            "Outline connectivity:".ljust(just) + f"{cls.outline_connectivity}-way",
+            "Dark range std multiplier:".ljust(just) + str(cls.dark_thresh_mult),
+            "Closing kernel size:".ljust(just) + f"{cls.close_kern_size}x{cls.close_kern_size}",
+            "Closing iterations:".ljust(just) + str(cls.close_iters),
+            "Scaling interpolation method (CV enum):".ljust(just) + str(cls.scl_interp_method),
+            "Reconstruction tolerance:".ljust(just) + f"{cls.reconstruction_tol} px",
+            "Harmonics limit:".ljust(just) + str(cls.harmonics_limit),
+            sep='\n'
+        )
 
     @classmethod
     def sesh(cls, callback):
@@ -227,7 +248,7 @@ class Fish(Base):
         _, result = cv.threshold(result, 127, 255, cv.THRESH_BINARY)
         return result
 
-    @cached_property
+    @property
     def area(self):  # cm^2
         return np.sum(self.normalized_mask) / 0xff / self.target_scale ** 2
 
@@ -268,13 +289,14 @@ class Fish(Base):
         num_points = self.normalized_outline.shape[0]
         num_harmonics = 1
         while True:
-            efds = pyefd.elliptic_fourier_descriptors(self.normalized_outline, order=num_harmonics, normalize=False)
-            efds = pyefd.normalize_efd(efds, size_invariant=False)
+            efds, trans = encode(self.normalized_outline, num_harmonics)
+            if abs(trans[1]) > 2:
+                efds = -efds
             reconstruction = reconstruct(efds, num_points)
             if contour_error(self.normalized_outline, reconstruction) <= self.reconstruction_tol:
                 break
-            elif num_harmonics == self.harmonic_limit:
-                raise AssertionError(f"Failed to fit within tolerance with {self.harmonic_limit} harmonics")
+            elif num_harmonics == self.harmonics_limit:
+                raise AssertionError(f"Failed to fit within tolerance with {self.harmonics_limit} harmonics")
             num_harmonics += 1
         return efds
 
