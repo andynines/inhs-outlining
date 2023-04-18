@@ -1,0 +1,84 @@
+TODOS FOR THIS WEEK
+Start writing stuff!
+Just do some more machine learning and get results and maximize accuracy
+Find a target journal/event
+Clean up these notes more
+Do Breen's ML experiment
+Remember to whiten when doing PCA; there's a named parameter for this
+Do area analysis. Area is literally just the number of pixels in any fish's normalized mask
+What the heck happened with the boys who need few harmonics? [(INHS_FISH_52146, 251), (INHS_FISH_76202, 178), (INHS_FISH_48522, 136), (INHS_FISH_6590, 122), (INHS_FISH_100173, 90), (INHS_FISH_77217, 87), (INHS_FISH_16422, 81), (INHS_FISH_61131, 81), (INHS_FISH_47335, 75), (INHS_FISH_5197, 62), (INHS_FISH_82274, 61), (INHS_FISH_47667, 60), (INHS_FISH_69158, 54), (INHS_FISH_57848, 51), (INHS_FISH_101061, 51), (INHS_FISH_62352, 49), (INHS_FISH_44956, 46), (INHS_FISH_79627, 44), (INHS_FISH_7961, 43), (INHS_FISH_55759, 43), (INHS_FISH_55329, 42), (INHS_FISH_76099, 40), (INHS_FISH_64857, 39), (INHS_FISH_75401, 34), (INHS_FISH_73804, 33), (INHS_FISH_53135, 33), (INHS_FISH_85017, 32), (INHS_FISH_52045, 32), (INHS_FISH_44501, 32), (INHS_FISH_80816, 31), (INHS_FISH_55183, 30), (INHS_FISH_49905, 29), (INHS_FISH_69094, 29), (INHS_FISH_50475, 29), (INHS_FISH_58250, 28), (INHS_FISH_73735, 28), (INHS_FISH_46155, 28), (INHS_FISH_81535, 28), (INHS_FISH_59518, 27), (INHS_FISH_59612, 26), (INHS_FISH_45040, 26), (INHS_FISH_102018, 26), (INHS_FISH_78779, 24), (INHS_FISH_43831, 24), (INHS_FISH_55280, 24), (INHS_FISH_101150, 24), (INHS_FISH_52266, 23), (INHS_FISH_81537, 23), (INHS_FISH_13695, 22), (INHS_FISH_57419, 22), (INHS_FISH_78596, 22), (INHS_FISH_6674, 22), (INHS_FISH_45072, 22), (INHS_FISH_55043, 21), (INHS_FISH_65274, 21), (INHS_FISH_47414, 20), (INHS_FISH_84797, 20), (INHS_FISH_13272, 19), (INHS_FISH_5311, 19), (INHS_FISH_51677, 19), (INHS_FISH_61115, 18), (INHS_FISH_6085, 18), (INHS_FISH_56479, 18), (INHS_FISH_46687, 18), (INHS_FISH_48264, 17), (INHS_FISH_48157, 17), (INHS_FISH_63180, 17), (INHS_FISH_50056, 16), (INHS_FISH_49821, 16), (INHS_FISH_75696, 15), (INHS_FISH_42224, 14), (INHS_FISH_7886, 14), (INHS_FISH_12694, 14), (INHS_FISH_47023, 14), (INHS_FISH_101728, 13), (INHS_FISH_81149, 13), (INHS_FISH_7642, 12), (INHS_FISH_46211, 12), (INHS_FISH_83230, 12), (INHS_FISH_65458, 11), (INHS_FISH_76902, 10), (INHS_FISH_74312, 9), (INHS_FISH_64314, 9), (INHS_FISH_51364, 8), (INHS_FISH_48876, 8), (INHS_FISH_44516, 8), (INHS_FISH_004920, 8), (INHS_FISH_52628, 7), (INHS_FISH_57882, 7), (INHS_FISH_43428, 7), (INHS_FISH_74064, 6), (INHS_FISH_48383, 6), (INHS_FISH_78119, 6), (INHS_FISH_63299, 5), (INHS_FISH_63738, 5), (INHS_FISH_63072, 5), (INHS_FISH_80939, 4), (INHS_FISH_7537, 4), (INHS_FISH_42539, 3), (INHS_FISH_53999, 2)]
+Find examples of this analysis being done specifically on scientific specimens
+
+
+NOTES ON THESIS PAPER
+Why outlines (specimen features) are important, in the context of fish
+Phenotypical traits (vs. genotypical)
+Exploring variation among species (an artificial label) and when something deserves to be called a new species
+Measuring an outline manually as a domain expert is not feasible. Computational approaches unlock a new realm of possibilities
+explain progression form Breen features -> Fourier Descriptors
+and progression of outline extraction techniques
+The outline is one of many features
+Example scientific questions that we could answer with these
+The why: trait extraction is a major problem in itself for BGNN, and we need outlines along with many other traits.
+Fourier analysis provides DISCRIMINATING features
+
+NOTES ON BGNN PRESENTATION
+Include the coverage of my dataset and how I arrived at those particular fish. How many species, genuses, etc.? See Spring Week 2 report for info.
+Make tons of graphs; the BGNN people love em!
+
+GENERAL AREAS TO LOOK INTO IF TIME PERMITS
+Alignment comparisons
+Hierarchical clustering (see Titan lake paper)
+Projections from centroids
+interpolating between fish shapes?
+Dynamic time warp analysis of signals. Signals align, fall apart from each other, and then align again There's a package called python-dtw for it.
+What about using hidden markov models for recognizing common contour shapes? I think there's a handwriting recognition parallel here.
+Data augmentation via translations, reflections, and dropout
+"Antennae" of catfish create weird components of outline; see 42539 for example.
+Improve outlining by looking at the gradient of the saturation histogram. Maybe the location of the largest difference is the best threshold? Also take into account distance from the bottom mean.
+Modify the contour error metric by using an "interpolating Hausdorff distance"
+
+METHODS/DETAILS WE ARE DECIDEDLY NOT INTERESTED IN
+Zahn-Roskies shape functions
+Eigenshapes
+Outlining using edge detection. We just can't seem to get a closed contour using Canny and the like.
+
+GENERAL INTERESTING THINGS TO REMEMBER
+The curse of dimensionality - as dimensions increase, everything becomes equidistantly big! Especially when the number of samples is less than the number of features.
+Ground truth errors? automated methods to detect them
+Voronoi diagrams
+Wavelet fourier descriptors? Just something I've read
+Landmarks? What defines one?
+Discontinuities in curvature, e.g. the tip of a shark's back fin, could help us compute the potentially feature of distance between extremal points / landmarks
+Remember to properly cite all libraries used, like PyEFD and Sklearn and Python-DTW
+
+Different distance metrics
+Visualize 3-dimensional feature space for lots of samples and multiple classes
+Try knn with k=3, 5, ...
+Test knn edge cases like 3 different classes like k=3
+For 100 samples, at least k=5
+Nearest centroid
+Technique for visualizing high dimensional spaces?
+
+Alternatively, a level set evolution with a velocity proportional to distances?
+As a boundary pixel, look at your non-boundary, non-interior neighbors. "exterior", background pixel
+If this distance is below a certain threshold, then the exterior pixel becomes the new boundary
+A more iterative process based on an initial guess
+Oh, and we'd also want to look at interior neighbors because you could be over-segmenting
+
+To compute curvature on a chain code, hit it with a gaussian filter to blur it, turn it into grayscale, and then compute iso line curvatures on that grayscale image using preexisting formulas
+What's the right spatial resolution where there's distinguishing qualities of the fish's curvature?
+
+1. extracting outline
+2. computing curvature -> initial "signal" that we could use
+https://arxiv.org/pdf/1407.7340.pdf
+https://math.mit.edu/classes/18.086/2007/levelsetnotes.pdf
+
+key phrase: level set method / level set curvature
+equation 4 in his given paper to compute curvatures of gaussian-blurred version of jagged binary image
+
+We have the segmentation boundary so at any point we know in what general direction "out" is
+
+Notion of uniform tension of a string wrapped around the fish
+Breen looked into something like it a long time ago (see paper) but probably over-complex
+https://ieeexplore.ieee.org/document/146367

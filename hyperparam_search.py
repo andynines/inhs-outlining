@@ -12,7 +12,7 @@ def generate_dataset():
                     'Cyprinus Carpio', 'Esox Americanus']:
         all_from_species = Fish.query(select(Fish).where(Fish.genus + ' ' + Fish.species == species))
         np.random.shuffle(all_from_species)
-        features = [list(fish.features) + [species] for fish in all_from_species[:5]]
+        features = [list(fish.breen_features) + [species] for fish in all_from_species[:5]]
         dataset += features
     return np.array(dataset)
 
@@ -34,7 +34,7 @@ if __name__ == "__main__":
                     Y = dataset[:, maxfeats]
                     for feature_count in range(1, 41):
                         f.write(f"{dark_thresh_mult},{outline_connectivity},{target_scale},{feature_count}")
-                        Fish.feature_count = feature_count
+                        Fish.breen_feature_count = feature_count
                         current_xs = X[:, :feature_count]
                         clf = KNeighborsClassifier(n_neighbors=1)
                         accuracies = cross_val_score(clf, current_xs, Y)

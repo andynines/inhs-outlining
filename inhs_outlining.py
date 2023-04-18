@@ -1,19 +1,36 @@
 from pathlib import Path
 import socket
+from werkzeug.utils import cached_property
+
 from sqlalchemy import LargeBinary, String, Float, create_engine, select
 from sqlalchemy.sql import func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
+
 import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
-from werkzeug.utils import cached_property
+
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
+from scipy.spatial.distance import directed_hausdorff
+
 import pyefd
 
-from typing import List, Tuple
+
+def showplt():
+    plt.show(block=False)
+
+
+def showim(im, gray=False):
+    plt.figure()
+    plt.imshow(im, **({"cmap": "gray"} if gray else {}))
+    showplt()
+
+
+def closeplt():
+    plt.close("all")
 
 
 def angle_between(v1, v2):
@@ -22,18 +39,38 @@ def angle_between(v1, v2):
     return np.rad2deg(np.arctan2(np.cross(v1, v2), np.dot(v1, v2)))
 
 
-def extract_k_most_significant_frequencies(signal, k):
-    n = len(signal)
-    dft = list(zip(np.fft.fft(signal), n * np.fft.fftfreq(n)))
-    highest_term_freqs = sorted(dft[1:n // 2], key=lambda p: -p[0])[:k]
-    return np.round(np.array(highest_term_freqs)[:, 1])
+def datamat(fishes):
+    efds = [fish.efds.ravel() for fish in fishes]
+    maxcoeffs = max(len(row) for row in efds)
+    efds = [np.pad(row, (0, maxcoeffs - len(row)), "constant", constant_values=0) for row in efds]
+    mat = np.array(efds)
+    labels = np.array([f"{fish.genus} {fish.species}" for fish in fishes]).reshape(-1, 1)
+    return np.concatenate((mat, labels), axis=1)
 
 
-def make_dataset(genus, species):
-    genus_fish = Fish.query(select(Fish).where((Fish.genus == genus) & (Fish.species == species)))
-    xs = np.array([fish.features for fish in genus_fish])
-    ys = np.array([f"{genus} {species}"] * len(xs)).reshape(-1, 1)
-    return np.concatenate((xs, ys), axis=1)
+def show_contour(contour, *additional_contours):
+    mins = abs(np.min(contour, axis=0))
+    maxes = np.max(contour, axis=0)
+    pad = 2
+    im = np.zeros(np.flip(mins + maxes) + 2 * pad)
+    for i, addl in enumerate(additional_contours):
+        c = 0xff / (i + 2)
+        im = cv.drawContours(im, [addl + mins + (pad, pad)], -1, (c, c, c), thickness=1)
+    im = cv.drawContours(im, [contour + mins + (pad, pad)], -1, (0xff, 0xff, 0xff), thickness=1)
+    showim(im, gray=True)
+
+
+def contour_error(contour1, contour2):
+    return max(
+        directed_hausdorff(contour1, contour2)[0],
+        directed_hausdorff(contour2, contour1)[0]
+    )
+
+
+def reconstruct(efds, num_points):
+    approximation = pyefd.reconstruct_contour(efds, num_points=num_points)
+    approximation = -np.round(approximation).astype(int)
+    return approximation
 
 
 def assert_is_lab_server():
@@ -49,11 +86,15 @@ class Fish(Base):
 
     engine = create_engine("sqlite:///fish.db")
 
-    feature_count = 3
-    target_scale = 20  # px/cm. The average of all records in fish.db is just under 76 px/cm.
+    breen_feature_count = 40
+    target_scale = 40  # px/cm. The average of all records in fish.db is just under 76 px/cm.
     outline_connectivity = 4
-    dark_thresh_mult = 0.25
+    dark_thresh_mult = 0.5
+    close_kern_size = 5
+    close_iters = 2
     scl_interp_method = cv.INTER_CUBIC
+    reconstruction_tol = 0.1 * target_scale  # cm * px/cm = px
+    harmonic_limit = 100
 
     @classmethod
     def sesh(cls, callback):
@@ -85,7 +126,11 @@ class Fish(Base):
 
     @classmethod
     def example_of(cls, genus, species):
-        return cls.query(select(cls).where((cls.genus == genus) & (cls.species == species)))[0]
+        return cls.all_of_species(genus, species)[0]
+
+    @classmethod
+    def all_of_species(cls, genus, species):
+        return cls.query(select(cls).where((cls.genus == genus) & (cls.species == species)))
 
     # IDs aren't purely numeric! Some have underscores in them.
     id: Mapped[str] = mapped_column(String(50), primary_key=True)
@@ -95,11 +140,14 @@ class Fish(Base):
     side: Mapped[str] = mapped_column(String(10))
     scale: Mapped[float] = mapped_column(Float)
 
-    def __repr__(self) -> str:
-        return f"<INHS_FISH_{self.id}>"
+    def __repr__(self):
+        return f"INHS_FISH_{self.id}"
+
+    def __str__(self):
+        return repr(self)
 
     @cached_property
-    def cropped_im(self) -> np.array:
+    def cropped_im(self):
         """
         img[
           max(0, bbox[1] - BBOX_PAD_PX): bbox[3] + BBOX_PAD_PX,
@@ -111,7 +159,12 @@ class Fish(Base):
         return cv.cvtColor(im, cv.COLOR_BGR2RGB)
 
     @cached_property
-    def original_im(self) -> np.array:
+    def saturation_im(self):
+        hsv = cv.cvtColor(self.cropped_im, cv.COLOR_RGB2HSV)
+        return hsv[:, :, 1]
+
+    @cached_property
+    def original_im(self):
         assert_is_lab_server()
         path_template = f"/usr/local/bgnn/inhs_{{group}}/INHS_FISH_{self.id}.jpg"
         validation_path = Path(path_template.format(group="validation"))
@@ -122,34 +175,30 @@ class Fish(Base):
         return cv.cvtColor(im, cv.COLOR_BGR2RGB)
 
     @cached_property
-    def mask(self) -> np.array:
-        hsvim = cv.cvtColor(self.cropped_im, cv.COLOR_RGB2HSV)
-        satim = hsvim[:, :, 1]
-        # plt.hist(satim.ravel(), 256, [0,256])
-        otsu_thresh, _ = cv.threshold(satim, 0, 0xff, cv.THRESH_BINARY | cv.THRESH_OTSU)
-        dark_px = satim[satim < otsu_thresh].flatten()
+    def mask(self):
+        otsu_thresh, _ = cv.threshold(self.saturation_im, 0, 0xff, cv.THRESH_BINARY | cv.THRESH_OTSU)
+        dark_px = self.saturation_im[self.saturation_im < otsu_thresh].ravel()
         dark_mean = np.mean(dark_px)
         dark_std = np.std(dark_px)
         new_thresh = dark_mean + self.dark_thresh_mult * dark_std
-        _, mask = cv.threshold(satim, new_thresh, 0xff, cv.THRESH_BINARY)
-        num_labels, labels, stats, centroids = \
+        _, mask = cv.threshold(self.saturation_im, new_thresh, 0xff, cv.THRESH_BINARY)
+        num_labels, labels, stats, _ = \
             cv.connectedComponentsWithStats(mask, connectivity=self.outline_connectivity, ltype=cv.CV_32S)
         label_areas = [(i, stats[i, cv.CC_STAT_AREA]) for i in range(num_labels)]
         label_areas.sort(key=lambda p: -p[1])
         mask[(labels != label_areas[0][0]) & (labels != label_areas[1][0])] = 0
-        kernel = np.ones((5, 5), np.uint8)
-        mask = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel, iterations=2)
-        # mask = cv.medianBlur(mask, 3) # Might've been more like 11, 13, 15
+        kernel = np.ones((self.close_kern_size, self.close_kern_size), np.uint8)
+        mask = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel, iterations=self.close_iters)
         return mask
 
     @cached_property
-    def centroid(self) -> Tuple[int, int]:
+    def centroid(self):
         moments = cv.moments(self.mask)
-        centroid = np.round([moments["m10"] / moments["m00"], moments["m01"] / moments["m00"]])
-        return int(centroid[0]), int(centroid[1])
+        result = np.round([moments["m10"] / moments["m00"], moments["m01"] / moments["m00"]])
+        return int(result[0]), int(result[1])
 
     @cached_property
-    def primary_axis(self) -> np.array:
+    def primary_axis(self):
         points = np.argwhere(self.mask == 0xff)
         pca = PCA(n_components=2)
         pca.fit(points)
@@ -158,7 +207,7 @@ class Fish(Base):
         return np.flip(ax)
 
     @cached_property
-    def normalized_mask(self) -> np.array:
+    def normalized_mask(self):
         height, width = self.mask.shape
         pad = max(height, width)
         adj_dim = (height + 2 * pad, width + 2 * pad)
@@ -179,54 +228,67 @@ class Fish(Base):
         return result
 
     @cached_property
+    def area(self):  # cm^2
+        return np.sum(self.normalized_mask) / 0xff / self.target_scale ** 2
+
+    @cached_property
     def normalized_outline(self):
         contours, _ = cv.findContours(self.normalized_mask, cv.RETR_LIST, cv.CHAIN_APPROX_NONE)
         outline = max(contours, key=cv.contourArea)
-        outline = [(pt[0][0], pt[0][1]) for pt in outline]
+        outline = np.array([(pt[0][0], pt[0][1]) for pt in outline])
         height, width = self.normalized_mask.shape
         assert all((0 not in pt) and (pt[1] != height - 1) and (pt[0] != width - 1) for pt in outline), \
-            "Inadmissible fish; expand ROI"
+            "Inadmissible fish touches image border; expand ROI"
+        """
+        # Shift the sequence of coordinates until it begins with the highest leftmost point
         minx = min([p[0] for p in outline])
         target_origin = min([p for p in outline if p[0] == minx], key=lambda p: p[1])
-        return np.roll(outline, -outline.index(target_origin), axis=0)
+        result = np.roll(outline, -outline.index(target_origin), axis=0)
+        return result - result[0]
+        """
+        outline_centroid = np.mean(outline, axis=0)
+        return np.round(outline - outline_centroid).astype(int)
 
     @cached_property
-    def signal(self) -> List[float]:
-        result = []
+    def breen_features(self):
+        angle_signal = []
         prev_delta = self.normalized_outline[1] - self.normalized_outline[0]
         for i, pt in enumerate(self.normalized_outline[:-1]):
             nextpt = self.normalized_outline[i + 1]
             delta = nextpt - pt
-            result.append(angle_between(delta, prev_delta))
+            angle_signal.append(angle_between(delta, prev_delta))
             prev_delta = delta
-        return result
-
-    @cached_property
-    def features(self):
-        return extract_k_most_significant_frequencies(self.signal, self.feature_count)
-
-    @cached_property
-    def complex_features(self):
-        complex_outline = np.empty(self.normalized_outline.shape[:-1], dtype=complex)
-        complex_outline.real = self.normalized_outline[:, 0]
-        complex_outline.imag = self.normalized_outline[:, 1]
-        return extract_k_most_significant_frequencies(complex_outline, self.feature_count)
-
-    @cached_property
-    def descriptors(self):  # TODO: not really integrated with everything else
-        complex_outline = np.empty(self.normalized_outline.shape[:-1], dtype=complex)
-        complex_outline.real = self.normalized_outline[:, 0]
-        complex_outline.imag = self.normalized_outline[:, 1]
-        return np.fft.fft(complex_outline)
+        n = len(angle_signal)
+        dft = list(zip(np.fft.fft(angle_signal), n * np.fft.fftfreq(n)))
+        highest_term_freqs = sorted(dft[1:n // 2], key=lambda p: -p[0])[:self.breen_feature_count]
+        return np.round(np.array(highest_term_freqs)[:, 1])
 
     @cached_property
     def efds(self):
-        coeffs = pyefd.elliptic_fourier_descriptors(self.normalized_outline, order=10, normalize=True)
-        return coeffs.flatten()[3:]
+        num_points = self.normalized_outline.shape[0]
+        num_harmonics = 1
+        while True:
+            efds = pyefd.elliptic_fourier_descriptors(self.normalized_outline, order=num_harmonics, normalize=False)
+            efds = pyefd.normalize_efd(efds, size_invariant=False)
+            reconstruction = reconstruct(efds, num_points)
+            if contour_error(self.normalized_outline, reconstruction) <= self.reconstruction_tol:
+                break
+            elif num_harmonics == self.harmonic_limit:
+                raise AssertionError(f"Failed to fit within tolerance with {self.harmonic_limit} harmonics")
+            num_harmonics += 1
+        return efds
+
+    @cached_property
+    def reconstruction(self):
+        return reconstruct(self.efds, self.normalized_outline.shape[0])
 
     def show(self):
-        plt.imshow(self.cropped_im)
-        plt.show()
+        showim(self.cropped_im)
+
+    def show_saturation_hist(self):
+        hist = plt.hist(self.saturation_im.ravel(), 256, [0, 256])
+        showplt()
+        return hist
 
     def show_ax(self):
         im = self.cropped_im.copy()
@@ -234,19 +296,13 @@ class Fish(Base):
                 (self.centroid + np.round(self.primary_axis * self.cropped_im.shape[0])).astype(int), (0, 0xff, 0),
                 thickness=2)
         cv.circle(im, self.centroid, 5, (0, 0, 0xff), thickness=-1)
-        plt.imshow(im)
-        plt.show()
+        showim(im)
 
     def show_outline(self):
-        mask = cv.cvtColor(self.normalized_mask.copy(), cv.COLOR_GRAY2RGB)
-        cv.drawContours(mask, [self.normalized_outline], -1, (0, 0xff, 0), thickness=2)
-        plt.imshow(mask)
-        plt.show()
+        show_contour(self.normalized_outline)
 
-    def save_outline(self):
-        outline_im = np.zeros(self.normalized_mask.shape)
-        cv.drawContours(outline_im, [self.normalized_outline], -1, (0xff, 0xff, 0xff), thickness=1)
-        cv.imwrite(f"INHS_FISH{self.id}_outline.png", outline_im)
+    def save(self):
+        cv.imwrite(repr(self) + ".png", cv.cvtColor(self.cropped_im, cv.COLOR_RGB2BGR))
 
 
 if __name__ == "__main__":
