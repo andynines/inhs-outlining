@@ -68,9 +68,7 @@ def contour_error(contour1, contour2):
 
 
 def encode(contour, num_harmonics):
-    efds = pyefd.elliptic_fourier_descriptors(contour, order=num_harmonics, normalize=False)
-    efds, trans = pyefd.normalize_efd(efds, size_invariant=False, return_transformation=True)
-    return efds, trans
+    return pyefd.elliptic_fourier_descriptors(contour, order=num_harmonics, normalize=False)
 
 
 def reconstruct(efds, num_points):
@@ -288,17 +286,13 @@ class Fish(Base):
     def efds(self):
         num_points = self.normalized_outline.shape[0]
         num_harmonics = 1
-        while True:
-            efds, trans = encode(self.normalized_outline, num_harmonics)
-            if abs(trans[1]) > 2:
-                efds = -efds
+        while num_harmonics <= self.harmonics_limit:
+            efds = encode(self.normalized_outline, num_harmonics)
             reconstruction = reconstruct(efds, num_points)
             if contour_error(self.normalized_outline, reconstruction) <= self.reconstruction_tol:
-                break
-            elif num_harmonics == self.harmonics_limit:
-                raise AssertionError(f"Failed to fit within tolerance with {self.harmonics_limit} harmonics")
+                return efds
             num_harmonics += 1
-        return efds
+        raise AssertionError(f"Failed to fit within tolerance with {self.harmonics_limit} harmonics")
 
     @cached_property
     def reconstruction(self):
