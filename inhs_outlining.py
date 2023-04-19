@@ -11,9 +11,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from sklearn.decomposition import PCA
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
-from sklearn.neighbors import KNeighborsClassifier
+# from sklearn.svm import SVC
+# from sklearn.neighbors import KNeighborsClassifier
 from scipy.spatial.distance import directed_hausdorff
 
 import pyefd
@@ -37,15 +36,6 @@ def angle_between(v1, v2):
     v1 = v1 / np.linalg.norm(v1)
     v2 = v2 / np.linalg.norm(v2)
     return np.rad2deg(np.arctan2(np.cross(v1, v2), np.dot(v1, v2)))
-
-
-def datamat(fishes):
-    efds = [fish.efds.ravel() for fish in fishes]
-    maxcoeffs = max(len(row) for row in efds)
-    efds = [np.pad(row, (0, maxcoeffs - len(row)), "constant", constant_values=0) for row in efds]
-    mat = np.array(efds)
-    labels = np.array([f"{fish.genus} {fish.species}" for fish in fishes]).reshape(-1, 1)
-    return np.concatenate((mat, labels), axis=1)
 
 
 def show_contour(contour, *additional_contours):
