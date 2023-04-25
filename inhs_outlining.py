@@ -11,8 +11,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from sklearn.decomposition import PCA
-# from sklearn.svm import SVC
-# from sklearn.neighbors import KNeighborsClassifier
 from scipy.spatial.distance import directed_hausdorff
 
 import pyefd
@@ -58,11 +56,12 @@ def contour_error(contour1, contour2):
 
 
 def encode(contour, num_harmonics):
-    return pyefd.elliptic_fourier_descriptors(contour, order=num_harmonics, normalize=False)
+    return pyefd.elliptic_fourier_descriptors(contour, order=num_harmonics, normalize=False), \
+           pyefd.calculate_dc_coefficients(contour)
 
 
-def reconstruct(efds, num_points):
-    reconstruction = pyefd.reconstruct_contour(efds, num_points=num_points)
+def reconstruct(efds, num_points, locus):
+    reconstruction = pyefd.reconstruct_contour(efds, num_points=num_points, locus=locus)
     reconstruction = np.round(reconstruction).astype(int)
     return reconstruction
 
@@ -81,27 +80,24 @@ class Fish(Base):
     engine = create_engine("sqlite:///fish.db")
 
     breen_feature_count = 40
-    target_scale = 40  # The average of all records in fish.db is just under 76 px/cm.
-    outline_connectivity = 4
+    spatial_resolution = 40  # The average of all records in fish.db is just under 76 px/cm.
     dark_thresh_mult = 0.5
     close_kern_size = 5
     close_iters = 2
     scl_interp_method = cv.INTER_CUBIC
-    reconstruction_tol = 0.1 * target_scale
+    reconstruction_tol = 0.1 * spatial_resolution
     harmonics_limit = 100
 
     @classmethod
     def show_params(cls):
         just = 40
         print(
-            "Target scale:".ljust(just) + f"{cls.target_scale} px/cm",
-            "Outline connectivity:".ljust(just) + f"{cls.outline_connectivity}-way",
+            "Spatial resolution:".ljust(just) + f"{cls.spatial_resolution} px/cm",
             "Dark range std multiplier:".ljust(just) + str(cls.dark_thresh_mult),
             "Closing kernel size:".ljust(just) + f"{cls.close_kern_size}x{cls.close_kern_size}",
             "Closing iterations:".ljust(just) + str(cls.close_iters),
             "Scaling interpolation method (CV enum):".ljust(just) + str(cls.scl_interp_method),
             "Reconstruction tolerance:".ljust(just) + f"{cls.reconstruction_tol} px",
-            "Harmonics limit:".ljust(just) + str(cls.harmonics_limit),
             sep='\n'
         )
 
@@ -192,7 +188,7 @@ class Fish(Base):
         new_thresh = dark_mean + self.dark_thresh_mult * dark_std
         _, mask = cv.threshold(self.saturation_im, new_thresh, 0xff, cv.THRESH_BINARY)
         num_labels, labels, stats, _ = \
-            cv.connectedComponentsWithStats(mask, connectivity=self.outline_connectivity, ltype=cv.CV_32S)
+            cv.connectedComponentsWithStats(mask, connectivity=8, ltype=cv.CV_32S)
         label_areas = [(i, stats[i, cv.CC_STAT_AREA]) for i in range(num_labels)]
         label_areas.sort(key=lambda p: -p[1])
         mask[(labels != label_areas[0][0]) & (labels != label_areas[1][0])] = 0
@@ -231,32 +227,33 @@ class Fish(Base):
         result = cv.warpAffine(result, rot, np.flip(adj_dim))
         if self.side == "right":
             result = cv.flip(result, 1)
-        scale_factor = self.target_scale / self.scale
+        scale_factor = self.spatial_resolution / self.scale
         result = cv.resize(result, None, fx=scale_factor, fy=scale_factor, interpolation=self.scl_interp_method)
         _, result = cv.threshold(result, 127, 255, cv.THRESH_BINARY)
         return result
 
     @property
     def area(self):  # cm^2
-        return np.sum(self.normalized_mask) / 0xff / self.target_scale ** 2
+        return cv.contourArea(self.normalized_outline) / self.spatial_resolution ** 2
+
+    @property
+    def perimeter(self):  # cm
+        return cv.arcLength(self.normalized_outline, closed=True) / self.spatial_resolution
 
     @cached_property
     def normalized_outline(self):
         contours, _ = cv.findContours(self.normalized_mask, cv.RETR_LIST, cv.CHAIN_APPROX_NONE)
         outline = max(contours, key=cv.contourArea)
-        outline = np.array([(pt[0][0], pt[0][1]) for pt in outline])
-        height, width = self.normalized_mask.shape
-        assert all((0 not in pt) and (pt[1] != height - 1) and (pt[0] != width - 1) for pt in outline), \
-            "Inadmissible fish touches image border; expand ROI"
-        """
+        outline = [(pt[0][0], pt[0][1]) for pt in outline]
         # Shift the sequence of coordinates until it begins with the highest leftmost point
         minx = min([p[0] for p in outline])
         target_origin = min([p for p in outline if p[0] == minx], key=lambda p: p[1])
-        result = np.roll(outline, -outline.index(target_origin), axis=0)
-        return result - result[0]
-        """
-        outline_centroid = np.mean(outline, axis=0)
-        return np.round(outline - outline_centroid).astype(int)
+        outline = np.roll(outline, -outline.index(target_origin), axis=0)
+        outline = np.array(outline) - np.mean(outline, axis=0)
+        outline = np.round(outline).astype(int)
+        # Remove duplicate successive points
+        # Wait until now to remove them because rounding can create duplicates that weren't present earlier
+        return np.array([outline[i] for i in range(len(outline)) if i == 0 or (outline[i] != outline[i - 1]).any()])
 
     @cached_property
     def breen_features(self):
@@ -273,20 +270,26 @@ class Fish(Base):
         return np.round(np.array(highest_term_freqs)[:, 1])
 
     @cached_property
-    def efds(self):
+    def encoding(self):
         num_points = self.normalized_outline.shape[0]
         num_harmonics = 1
         while num_harmonics <= self.harmonics_limit:
-            efds = encode(self.normalized_outline, num_harmonics)
-            reconstruction = reconstruct(efds, num_points)
+            efds, locus = encode(self.normalized_outline, num_harmonics)
+            reconstruction = reconstruct(efds, num_points, locus)
             if contour_error(self.normalized_outline, reconstruction) <= self.reconstruction_tol:
-                return efds
+                return efds, locus
             num_harmonics += 1
         raise AssertionError(f"Failed to fit within tolerance with {self.harmonics_limit} harmonics")
 
     @cached_property
+    def features(self):
+        efds = self.encoding[0].copy()
+        return pyefd.normalize_efd(efds).ravel()[3:]
+
+    @cached_property
     def reconstruction(self):
-        return reconstruct(self.efds, self.normalized_outline.shape[0])
+        efds, locus = self.encoding
+        return reconstruct(efds, self.normalized_outline.shape[0], locus)
 
     def show(self):
         showim(self.cropped_im)

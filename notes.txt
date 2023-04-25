@@ -1,13 +1,22 @@
+LEFT OFF
+Normalize efds to get them all on same locus for classification
+
+"geometric callsign?"
+Big recurring idea: there are the feature efds and the working efds. In order to maximize distinguishability, we may have to make irreversible transformations/normalizations to the efds.
+
+
+remove any unneeded efd columns
+variance pca, does first 30 of 95% = 60%?
+cosine similarity between efds?
+do feature reduction experiments
+try bigger k in knn. What k should we use for as many samples as we have?
+explicitly deal with knn ties. Try taking the class who has a distance from the sample closest to the average of all distances of the nearest ponits
+
 TODOS FOR THIS WEEK
 Start writing stuff!
-Just do some more machine learning and get results and maximize accuracy
 Find a target journal/event
 Clean up these notes more
-Do Breen's ML experiment
 Remember to whiten when doing PCA; there's a named parameter for this
-Do area analysis. Area is literally just the number of pixels in any fish's normalized mask
-Find examples of this analysis being done specifically on scientific specimens
-
 
 NOTES ON THESIS PAPER
 Why outlines (specimen features) are important, in the context of fish
@@ -25,6 +34,13 @@ Need to round up whole data curation process somewhere. Your week 2 report sort 
 NOTES ON BGNN PRESENTATION
 Include the coverage of my dataset and how I arrived at those particular fish. How many species, genuses, etc.? See Spring Week 2 report for info.
 Make tons of graphs; the BGNN people love em!
+Aim for 10-12 minutes.
+Slide ideas: motivations (on Yasin's wishlist), vague scientific/biological questions regarding comparison of species, shapes, changes over time, geography, phenotypical analysis. Also CS-related interest
+Plan, what I did, iterations, outcomes
+Put slides in shared file ideally before next meeting
+Demonstrate fish morphing (at least one example)
+Include final slide with all MRC publications - send to Joel for help. Jane can add to it too
+Expect Jane to hop in at end and plug MRC
 
 GENERAL AREAS TO LOOK INTO IF TIME PERMITS
 Alignment comparisons
@@ -37,6 +53,8 @@ Data augmentation via translations, reflections, and dropout
 "Antennae" of catfish create weird components of outline; see 42539 for example.
 Improve outlining by looking at the gradient of the saturation histogram. Maybe the location of the largest difference is the best threshold? Also take into account distance from the bottom mean.
 Modify the contour error metric by using an "interpolating Hausdorff distance"
+Classification via nearest centroid (I can imagine scenarios where this might not be as good as kNN)
+Using other shape descriptors to add to each outline's feature vector (see https://docs.opencv.org/3.4/d3/dc0/group__imgproc__shape.html)
 
 METHODS/DETAILS WE ARE DECIDEDLY NOT INTERESTED IN
 Zahn-Roskies shape functions
@@ -57,7 +75,6 @@ Visualize 3-dimensional feature space for lots of samples and multiple classes
 Try knn with k=3, 5, ...
 Test knn edge cases like 3 different classes like k=3
 For 100 samples, at least k=5
-Nearest centroid
 Technique for visualizing high dimensional spaces?
 
 Alternatively, a level set evolution with a velocity proportional to distances?

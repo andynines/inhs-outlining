@@ -25,7 +25,7 @@ if __name__ == "__main__":
             for outline_connectivity in [4, 8]:
                 Fish.outline_connectivity = outline_connectivity
                 for target_scale in range(20, 125, 5):
-                    Fish.target_scale = target_scale
+                    Fish.spatial_resolution = target_scale
                     dataset = generate_dataset()
                     rows, cols = dataset.shape
                     maxfeats = cols - 1
