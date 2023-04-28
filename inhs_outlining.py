@@ -66,6 +66,19 @@ def reconstruct(efds, num_points, locus):
     return reconstruction
 
 
+def pad_ragged(mat):
+    max_row_len = max(len(row) for row in mat)
+    for row in mat:
+        row += [0] * (max_row_len - len(row))
+    return np.array(mat)
+
+
+def cross(*encodings):
+    encoding_mat = pad_ragged([list(locus) + list(efds.ravel()) for efds, locus in encodings])
+    result = np.mean(encoding_mat, axis=0)
+    return result[:2], result[2:].reshape(result.shape[0] // 4, 4)
+
+
 def assert_is_lab_server():
     assert socket.gethostname() == "CCI-DX4M513", "Not on lab server"
 
@@ -79,7 +92,7 @@ class Fish(Base):
 
     engine = create_engine("sqlite:///fish.db")
 
-    breen_feature_count = 40
+    # breen_feature_count = 40
     spatial_resolution = 40  # The average of all records in fish.db is just under 76 px/cm.
     dark_thresh_mult = 0.5
     close_kern_size = 5
@@ -255,6 +268,7 @@ class Fish(Base):
         # Wait until now to remove them because rounding can create duplicates that weren't present earlier
         return np.array([outline[i] for i in range(len(outline)) if i == 0 or (outline[i] != outline[i - 1]).any()])
 
+    """
     @cached_property
     def breen_features(self):
         angle_signal = []
@@ -268,6 +282,7 @@ class Fish(Base):
         dft = list(zip(np.fft.fft(angle_signal), n * np.fft.fftfreq(n)))
         highest_term_freqs = sorted(dft[1:n // 2], key=lambda p: -p[0])[:self.breen_feature_count]
         return np.round(np.array(highest_term_freqs)[:, 1])
+    """
 
     @cached_property
     def encoding(self):
@@ -280,11 +295,6 @@ class Fish(Base):
                 return efds, locus
             num_harmonics += 1
         raise AssertionError(f"Failed to fit within tolerance with {self.harmonics_limit} harmonics")
-
-    @cached_property
-    def features(self):
-        efds = self.encoding[0].copy()
-        return pyefd.normalize_efd(efds).ravel()[3:]
 
     @cached_property
     def reconstruction(self):
@@ -309,6 +319,9 @@ class Fish(Base):
 
     def show_outline(self):
         show_contour(self.normalized_outline)
+
+    def show_reconstruction(self):
+        show_contour(self.reconstruction)
 
     def save(self):
         cv.imwrite(repr(self) + ".png", cv.cvtColor(self.cropped_im, cv.COLOR_RGB2BGR))

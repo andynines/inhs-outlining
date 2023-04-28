@@ -2,16 +2,20 @@ from inhs_outlining import *
 
 import multiprocessing as mp
 import pathlib
+import random
 
 
 def get_target_fish():
-    # target_species = [species
-    #                   for species, count in Fish.count_unique_species().items()
-    #                   if count >= 100]
-    # target_fish = []
-    # for species in target_species:
-    #     target_fish += Fish.all_of_species(*species.split(' '))
-    return Fish.all()
+    random.seed(0)
+    target_species = [species
+                      for species, count in Fish.count_unique_species().items()
+                      if count >= 100]
+    target_fish = []
+    for species in target_species:
+        all_of_species = Fish.all_of_species(*species.split(' '))
+        random.shuffle(all_of_species)
+        target_fish += all_of_species[:100]
+    return target_fish
 
 
 def list_efds(fish, index):
@@ -20,10 +24,10 @@ def list_efds(fish, index):
     pathlib.Path("failures/").mkdir(exist_ok=True)
     with open(f"frags/efdfrag{index}.txt", 'w') as efdfrag:
         for f in fish:
-            try:
-                efds = f.features.astype(str).ravel()
-                efdfrag.write(','.join(efds) + f",{f.genus} {f.species}\n")
-            except AssertionError:
+            efds, locus = f.encoding
+            row = np.append(locus, efds.ravel()).astype(str)
+            efdfrag.write(','.join(row) + f",{f.genus} {f.species}\n")
+            if efds.shape[0] >= 50:
                 failure_ids.append(f.id)
             del f
     with open(f"failures/failures{index}.txt", 'w') as failures:
@@ -45,16 +49,16 @@ def generate_efd_lists(fish):
 
 def collect_frags():
     mat = []
+    labels = []
     for fragpath in pathlib.Path("frags/").iterdir():
         with open(fragpath, 'r') as efdfrag:
-            mat += [row.split(',') for row in efdfrag.readlines()]
-    maxrowlen = max(len(row) for row in mat)
-    for row in mat:
-        for _ in range(maxrowlen - len(row)):
-            row.insert(-1, 0)
-    mat = np.array(mat)
-    mat[:, -1] = [label.strip() for label in mat[:, -1]]
-    np.savetxt("normalized_1mm_feats.csv", mat, fmt='%s', delimiter=',')
+            for row in efdfrag.readlines():
+                cols = row.split(',')
+                mat.append(cols[:-1])
+                labels.append(cols[-1].strip())
+    mat = pad_ragged(mat)
+    mat = np.concatenate((mat, np.array(labels).reshape(-1, 1)), axis=1)
+    np.savetxt("1mm_fab_fifteen.csv", mat, fmt='%s', delimiter=',')
 
 
 if __name__ == "__main__":
