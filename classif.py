@@ -4,11 +4,10 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.metrics import top_k_accuracy_score
 from sklearn.model_selection import cross_val_score
 
-from sklearn.neighbors import KNeighborsClassifier, NearestCentroid
 from sklearn.svm import SVC
 
 
-def load(mat_file):
+def load_mat(mat_file):
     data = np.genfromtxt(mat_file, dtype=str, delimiter=',')
     np.random.seed(0)
     np.random.shuffle(data)
@@ -19,6 +18,10 @@ def standardize(X):
     zero_col_inds = np.argwhere(np.all(X[..., :] == 0, axis=0))
     X = np.delete(X, zero_col_inds, axis=1)
     return (X - np.mean(X, axis=0)) / np.std(X, axis=0)
+
+
+def normalize(X):
+    pass
 
 
 def lda_reduce(X, Y):
@@ -40,7 +43,7 @@ def run_trial_with(clf, X, Y, top_ks=(1, 3, 5), folds=10):
 
 
 if __name__ == "__main__":
-    X, Y = load("1mm_fab_fifteen.csv")
+    X, Y = load_mat("1mm_fab_fifteen.csv")
     Xr = lda_reduce(X, Y)
     run_trial_with(
         SVC(random_state=0, kernel='linear', probability=True),

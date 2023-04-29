@@ -1,4 +1,5 @@
 LEFT OFF
+You haven't actually tried classifying normalized EFDs now that you're doing LDA. Write a method for that, remove the first three boys, etc.
 Fish 44303 card appendage issues. AAAAAAAAAA
 And 51445
 Maybe 44665
@@ -7,8 +8,17 @@ Definitely 8266 (good example too along with 44303)
 Definitely 51500 too, that's another good example
 54074 is also a problem but not because of the tag; rather because it has an untucked fin.
 64281 has problems with some structure near the fish that isn't a card.
-We're learning that some fish do genuinely need 50+ harmonics to satisfy the reconstruction tolerance.
 Comparing my areas with Joel's to see if I could be wrong?
+Try feat reduc on lda feats?
+
+INCLUDE MRC LOGO ON SLIDES
+MEET ON MONDAY BEFOREHAND
+Make a confusion matrix, per-class accuracy
+Stratify probability of each top-1 pick
+Record accuracy just when confidence is > 95% for ex.
+"here's what I can achieve by the end of senior design"
+Weighted average of shapes is possible. Maybe do an animation?
+Find precision/recall/f1 of classifier
 
 "geometric callsign?"
 Big recurring idea: there are the feature efds and the working efds. In order to maximize distinguishability, we may have to make irreversible transformations/normalizations to the efds.
@@ -16,14 +26,11 @@ Big recurring idea: there are the feature efds and the working efds. In order to
 TODOS FOR THIS WEEK
 Start writing stuff!
 Find a target journal/event
-remove any unneeded efd columns
 variance pca, does first 30 of 95% = 60%?
 cosine similarity between efds?
 do feature reduction experiments
 try bigger k in knn. What k should we use for as many samples as we have?
 explicitly deal with knn ties. Try taking the class who has a distance from the sample closest to the average of all distances of the nearest ponits
-Try LDA
-You can get probability estimates from classifiers and experiment with top-5 error
 
 NOTES ON THESIS PAPER
 Why outlines (specimen features) are important, in the context of fish
@@ -36,7 +43,7 @@ The outline is one of many features
 Example scientific questions that we could answer with these
 The why: trait extraction is a major problem in itself for BGNN, and we need outlines along with many other traits.
 Fourier analysis provides DISCRIMINATING features
-Need to round up whole data curation process somewhere. Your week 2 report sort of does it but the details of what got dropped for detectron reasons might be wrong; look back farther in your presentations. And we now also dropped Lepomis Hybrids and loners
+Need to round up whole data curation process somewhere. Your spring week 2 report sort of does it but the details of what got dropped for detectron reasons might be wrong; look back farther in your presentations. And we now also dropped Lepomis Hybrids and loners
 
 NOTES ON BGNN PRESENTATION
 Include the coverage of my dataset and how I arrived at those particular fish. How many species, genuses, etc.? See Spring Week 2 report for info.
@@ -45,7 +52,6 @@ Aim for 10-12 minutes.
 Slide ideas: motivations (on Yasin's wishlist), vague scientific/biological questions regarding comparison of species, shapes, changes over time, geography, phenotypical analysis. Also CS-related interest
 Plan, what I did, iterations, outcomes
 Put slides in shared file ideally before next meeting
-Demonstrate fish morphing (at least one example)
 Include final slide with all MRC publications - send to Joel for help. Jane can add to it too
 Expect Jane to hop in at end and plug MRC
 
@@ -77,6 +83,8 @@ Landmarks? What defines one?
 Discontinuities in curvature, e.g. the tip of a shark's back fin, could help us compute the potentially feature of distance between extremal points / landmarks
 Remember to properly cite all libraries used, like PyEFD and Sklearn and Python-DTW
 A nearest centroid classifier actually did a lot better (75% acc) than a KNN (50% acc) out of the box.
+When you normalize EFDs, the first three coefficients will always be 1, 0, 0. So you can remove them from a feature matrix.
+Most high-harmonic fish do genuinely need that many to reconstruct within tolerance. But several are actually screwed up.
 
 OLD BRAINSTORM ARTIFACTS FROM OUTLINE EXTRACTION DISCUSSIONS
 

@@ -14,6 +14,7 @@ from sklearn.decomposition import PCA
 from scipy.spatial.distance import directed_hausdorff
 
 import pyefd
+import imageio
 
 
 def showplt():
@@ -73,10 +74,18 @@ def pad_ragged(mat):
     return np.array(mat)
 
 
-def cross(*encodings):
+def cross(*encodings, weights=None):
+    if weights is None:
+        n = len(encodings)
+        weights = [1/n for _ in range(n)]
+    weights = np.array(weights).reshape(-1, 1)
     encoding_mat = pad_ragged([list(locus) + list(efds.ravel()) for efds, locus in encodings])
-    result = np.mean(encoding_mat, axis=0)
-    return result[:2], result[2:].reshape(result.shape[0] // 4, 4)
+    result = np.sum(encoding_mat * weights, axis=0)
+    return result[2:].reshape(result.shape[0] // 4, 4), result[:2]
+
+
+def animate_morph_between(fish1, fish2, n_frames=50, speed=0.5):
+    pass
 
 
 def assert_is_lab_server():
@@ -98,7 +107,7 @@ class Fish(Base):
     close_kern_size = 5
     close_iters = 2
     scl_interp_method = cv.INTER_CUBIC
-    reconstruction_tol = 0.1 * spatial_resolution
+    reconstruction_tol = 0.1 * spatial_resolution  # px
     harmonics_limit = 100
 
     @classmethod
