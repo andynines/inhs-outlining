@@ -21,7 +21,11 @@ def standardize(X):
 
 
 def normalize(X):
-    pass
+    Xn = []
+    for efds in X:
+        xni, trans = pyefd.normalize_efd(efds.reshape(len(efds) // 4, 4), return_transformation=True)
+        Xn.append(xni.flatten()[3:] * (-1 if abs(trans[1]) > np.pi / 12 else 1))
+    return np.array(Xn)
 
 
 def lda_reduce(X, Y):
@@ -44,7 +48,8 @@ def run_trial_with(clf, X, Y, top_ks=(1, 3, 5), folds=10):
 
 if __name__ == "__main__":
     X, Y = load_mat("1mm_fab_fifteen.csv")
-    Xr = lda_reduce(X, Y)
+    Xn = normalize(X)
+    Xr = lda_reduce(Xn, Y)
     run_trial_with(
         SVC(random_state=0, kernel='linear', probability=True),
         Xr, Y,

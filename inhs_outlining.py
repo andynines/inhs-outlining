@@ -14,7 +14,7 @@ from sklearn.decomposition import PCA
 from scipy.spatial.distance import directed_hausdorff
 
 import pyefd
-import imageio
+import imageio as iio
 
 
 def showplt():
@@ -37,7 +37,7 @@ def angle_between(v1, v2):
     return np.rad2deg(np.arctan2(np.cross(v1, v2), np.dot(v1, v2)))
 
 
-def show_contour(contour, *additional_contours):
+def make_contour_im(contour, *additional_contours):
     mins = abs(np.min(contour, axis=0))
     maxes = np.max(contour, axis=0)
     pad = 2
@@ -46,6 +46,11 @@ def show_contour(contour, *additional_contours):
         c = 0xff / (i + 2)
         im = cv.drawContours(im, [addl + mins + (pad, pad)], -1, (c, c, c), thickness=1)
     im = cv.drawContours(im, [contour + mins + (pad, pad)], -1, (0xff, 0xff, 0xff), thickness=1)
+    return im
+
+
+def show_contour(contour, *additional_contours):
+    im = make_contour_im(contour, *additional_contours)
     showim(im, gray=True)
 
 
@@ -77,15 +82,29 @@ def pad_ragged(mat):
 def cross(*encodings, weights=None):
     if weights is None:
         n = len(encodings)
-        weights = [1/n for _ in range(n)]
+        weights = [1 / n for _ in range(n)]
     weights = np.array(weights).reshape(-1, 1)
-    encoding_mat = pad_ragged([list(locus) + list(efds.ravel()) for efds, locus in encodings])
+    encoding_mat = pad_ragged([list(efds.ravel()) for efds, _ in encodings])
     result = np.sum(encoding_mat * weights, axis=0)
-    return result[2:].reshape(result.shape[0] // 4, 4), result[:2]
+    return result.reshape(result.shape[0] // 4, 4)
 
 
-def animate_morph_between(fish1, fish2, n_frames=50, speed=0.5):
-    pass
+def animate_morph_between(fish1, fish2, n_frames=50, speed=0.3, num_points=300):
+    gif_name = f"{fish1.id}-to-{fish2.id}-{n_frames}f-{speed}spd.gif"
+    # with iio.get_writer(gif_name, mode='I', fps=12) as gif_writer:
+    frames = []
+    for w in np.linspace(0, 1, n_frames):
+        efds = cross(fish1.encoding, fish2.encoding, weights=(1 - w, w))
+        contour = reconstruct(efds, num_points, (0, 0))
+        frame = make_contour_im(contour)
+        frames.append(frame)
+    frame_dims = np.array([frame.shape for frame in frames])
+    frame_dim_max = np.array([np.max(frame_dims[:, 0]), np.max(frame_dims[:, 1])])
+    for i, frame in enumerate(frames):
+        dy, dx = frame_dim_max - frame.shape
+        frames[i] = cv.copyMakeBorder(
+            frame, top=dy, bottom=dy + (dy % 2), left=dx, right=dx + (dx % 2), borderType=cv.BORDER_CONSTANT, value=0)
+    iio.mimsave(gif_name, frames, duration=speed)
 
 
 def assert_is_lab_server():
@@ -274,7 +293,7 @@ class Fish(Base):
         outline = np.array(outline) - np.mean(outline, axis=0)
         outline = np.round(outline).astype(int)
         # Remove duplicate successive points
-        # Wait until now to remove them because rounding can create duplicates that weren't present earlier
+        # We wait until now to remove them because rounding can create more duplicates
         return np.array([outline[i] for i in range(len(outline)) if i == 0 or (outline[i] != outline[i - 1]).any()])
 
     """
@@ -315,6 +334,9 @@ class Fish(Base):
 
     def show_saturation_hist(self):
         hist = plt.hist(self.saturation_im.ravel(), 256, [0, 256])
+        plt.xlabel("Intensity")
+        plt.ylabel("Pixels")
+        plt.margins(x=0)
         showplt()
         return hist
 
@@ -338,3 +360,6 @@ class Fish(Base):
 
 if __name__ == "__main__":
     pass
+    # f1 = Fish.example_of("Lepomis", "Microlophus")
+    # f2 = Fish.example_of("Esox", "Americanus")
+    # animate_morph_between(f1, f2)

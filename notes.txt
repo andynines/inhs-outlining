@@ -1,5 +1,6 @@
 LEFT OFF
-You haven't actually tried classifying normalized EFDs now that you're doing LDA. Write a method for that, remove the first three boys, etc.
+Immediately doing: you haven't actually tried classifying normalized EFDs now that you're doing LDA. Write a method for that, remove the first three boys, etc.
+    Appears to have given a slight accuracy boost, but some boys in there might have been flipped
 Fish 44303 card appendage issues. AAAAAAAAAA
 And 51445
 Maybe 44665
@@ -9,28 +10,30 @@ Definitely 51500 too, that's another good example
 54074 is also a problem but not because of the tag; rather because it has an untucked fin.
 64281 has problems with some structure near the fish that isn't a card.
 Comparing my areas with Joel's to see if I could be wrong?
-Try feat reduc on lda feats?
-
-INCLUDE MRC LOGO ON SLIDES
-MEET ON MONDAY BEFOREHAND
+Try feat reduction on lda feats?
 Make a confusion matrix, per-class accuracy
-Stratify probability of each top-1 pick
-Record accuracy just when confidence is > 95% for ex.
-"here's what I can achieve by the end of senior design"
+Stratify probability of each top-1 pick. Record accuracy just when confidence is > 95% for ex.
 Weighted average of shapes is possible. Maybe do an animation?
 Find precision/recall/f1 of classifier
+Try using a neural network (not just a silly perceptron, but try that too) for classification.
+If you move back the starting point of the pipeline (filling the database with og images rather than cropped ones) parameterize the padding and use 10% instead of an absolute 10px.
 
-"geometric callsign?"
-Big recurring idea: there are the feature efds and the working efds. In order to maximize distinguishability, we may have to make irreversible transformations/normalizations to the efds.
+PROJECT DESCRIPTION BRAINSTORMING
+Today's vast, online collections of digitized biological specimens have promising applications, but their metadata is often absent and sometimes erroneous.
+When present and accurate, morphological metadata in particular (specimen lengths, body part positions, etc.) provides valuable insight into species' geography, behaviors, and evolutionary histories.
+Researchers must then compute the metadata for themselves, but it's prohibitively expensive to do it manually, so they must automate.
+This work focuses on automatically extracting metadata from one particular collection of fish specimens.
+We demonstrate image processing techniques for extracting fish outlines, a key morphological feature, and representing those outlines via elliptical Fourier descriptors.
+We also overcome many challenges in upholding data cleanliness, thanks in part to work done in previous publications on metadata extraction.
+The resulting dataset is well suited for a variety of machine learning-based downstream analyses, one of the simplest being classification by genus and/or species.
 
 TODOS FOR THIS WEEK
 Start writing stuff!
 Find a target journal/event
 variance pca, does first 30 of 95% = 60%?
 cosine similarity between efds?
-do feature reduction experiments
 try bigger k in knn. What k should we use for as many samples as we have?
-explicitly deal with knn ties. Try taking the class who has a distance from the sample closest to the average of all distances of the nearest ponits
+explicitly deal with knn ties. Try taking the class who has a distance from the sample closest to the average of all distances of the nearest points
 
 NOTES ON THESIS PAPER
 Why outlines (specimen features) are important, in the context of fish
@@ -45,15 +48,10 @@ The why: trait extraction is a major problem in itself for BGNN, and we need out
 Fourier analysis provides DISCRIMINATING features
 Need to round up whole data curation process somewhere. Your spring week 2 report sort of does it but the details of what got dropped for detectron reasons might be wrong; look back farther in your presentations. And we now also dropped Lepomis Hybrids and loners
 
-NOTES ON BGNN PRESENTATION
+STILL-RELEVANT NOTES ON BGNN PRESENTATION
 Include the coverage of my dataset and how I arrived at those particular fish. How many species, genuses, etc.? See Spring Week 2 report for info.
 Make tons of graphs; the BGNN people love em!
-Aim for 10-12 minutes.
 Slide ideas: motivations (on Yasin's wishlist), vague scientific/biological questions regarding comparison of species, shapes, changes over time, geography, phenotypical analysis. Also CS-related interest
-Plan, what I did, iterations, outcomes
-Put slides in shared file ideally before next meeting
-Include final slide with all MRC publications - send to Joel for help. Jane can add to it too
-Expect Jane to hop in at end and plug MRC
 
 GENERAL AREAS TO LOOK INTO IF TIME PERMITS
 Alignment comparisons
@@ -61,18 +59,21 @@ Hierarchical clustering (see Titan lake paper)
 Projections from centroids
 Dynamic time warp analysis of signals. Signals align, fall apart from each other, and then align again There's a package called python-dtw for it.
 Data augmentation via translations, reflections, and dropout
-"Antennae" of catfish create weird components of outline; see 42539 for example.
+"Antennae" of catfish create weird components of outline that don't fit the fish well; see 42539 for example.
 Improve outlining by looking at the gradient of the saturation histogram. Maybe the location of the largest difference is the best threshold? Also take into account distance from the bottom mean.
 Modify the contour error metric by using an "interpolating Hausdorff distance"
 Using other shape descriptors to add to each outline's feature vector (see https://docs.opencv.org/3.4/d3/dc0/group__imgproc__shape.html)
 Pull in image quality metrics generated by Leipzig et. al. to determine whether we should use an image
 Make my own length calculation and compare it to Joel's from his OG paper
 SVD as a dim reduction method?
+Reach out to the  Ecological and Evolutionary Signal-processing and Informatics Laboratory in the ECE dept.
+Data augmentation ideas: 1. random-weight averages of a random number of samples 2. random perturbations of a single sample
 
 METHODS/DETAILS WE ARE DECIDEDLY NOT INTERESTED IN
 Zahn-Roskies shape functions
 Eigenshapes
 Outlining using edge detection. We just can't seem to get a closed contour using Canny and the like.
+Adapting this pipeline to other image repositories; we just don't have the time.
 
 GENERAL INTERESTING THINGS TO REMEMBER
 The curse of dimensionality - as dimensions increase, everything becomes equidistantly big! Especially when the number of samples is less than the number of features.
@@ -85,6 +86,7 @@ Remember to properly cite all libraries used, like PyEFD and Sklearn and Python-
 A nearest centroid classifier actually did a lot better (75% acc) than a KNN (50% acc) out of the box.
 When you normalize EFDs, the first three coefficients will always be 1, 0, 0. So you can remove them from a feature matrix.
 Most high-harmonic fish do genuinely need that many to reconstruct within tolerance. But several are actually screwed up.
+There are the feature efds and the working efds. In order to maximize distinguishability, we may have to make irreversible transformations/normalizations to the efds that don't allow us to reconstruct their outlines.
 
 OLD BRAINSTORM ARTIFACTS FROM OUTLINE EXTRACTION DISCUSSIONS
 
