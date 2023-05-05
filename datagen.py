@@ -19,20 +19,13 @@ def get_target_fish():
 
 
 def list_efds(fish, index):
-    failure_ids = []
     pathlib.Path("frags/").mkdir(exist_ok=True)
-    pathlib.Path("failures/").mkdir(exist_ok=True)
     with open(f"frags/efdfrag{index}.txt", 'w') as efdfrag:
         for f in fish:
             efds, locus = f.encoding
             row = np.append(locus, efds.ravel()).astype(str)
             efdfrag.write(','.join(row) + f",{f.genus} {f.species}\n")
-            if efds.shape[0] >= 50:
-                failure_ids.append(f.id)
             del f
-    with open(f"failures/failures{index}.txt", 'w') as failures:
-        for failure_id in failure_ids:
-            failures.write(f"{failure_id}\n")
 
 
 def generate_efd_lists(fish):
@@ -58,7 +51,7 @@ def collect_frags():
                 labels.append(cols[-1].strip())
     mat = pad_ragged(mat)
     mat = np.concatenate((mat, np.array(labels).reshape(-1, 1)), axis=1)
-    np.savetxt("1mm_fab_fifteen.csv", mat, fmt='%s', delimiter=',')
+    np.savetxt("1mm_fifteen_species.csv", mat, fmt='%s', delimiter=',')
 
 
 if __name__ == "__main__":

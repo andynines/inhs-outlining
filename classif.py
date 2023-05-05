@@ -47,7 +47,7 @@ def run_trial_with(clf, X, Y, top_ks=(1, 3, 5), folds=10):
 
 
 if __name__ == "__main__":
-    X, Y = load_mat("1mm_fab_fifteen.csv")
+    X, Y = load_mat("1mm_fifteen_species.csv")
     Xn = normalize(X)
     Xr = lda_reduce(Xn, Y)
     run_trial_with(
