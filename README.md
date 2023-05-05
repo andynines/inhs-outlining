@@ -23,7 +23,7 @@ $ source venv/bin/activate
 
 ## Reproducing presentation results
 ### 1.
-Generate the dataset. This takes around ten minutes on eight, Intel i5 cores at 3.4 GHz:
+Generate the dataset. This takes less than ten minutes on eight, Intel i5 cores at 3.4 GHz:
 ```
 python datagen.py
 ```
@@ -34,6 +34,19 @@ Run the classification experiment:
 python classif.py
 ```
 You may observe higher accuracy than I reported during the presentation. I've since begun normalizing the elliptic Fourier descriptors' scale, which gives a slight accuracy boost.
+
+## General usage examples
+I frequently work in interactive sessions:
+```
+$ python -i inhs_outlining.py 
+```
+You can fetch particular fish in a few different ways:
+```python
+>>> one_boops = Fish.example_of("Notropis", "Boops")
+>>> all_cyanelluses = Fish.all_of_species("Lepomis", "Cyanellus")
+>>> fish_5099 = Fish.with_id("5099")
+```
+Then, you can view their outlines using their `show_reconstruction()` method.
 
 ## Outstanding issues
 * Morphing animations between fish (not shown in the presentation) are a work in progress. The function `animate_morph_between()` in `inhs_outlining.py` produces a GIF, but it's choppy.
