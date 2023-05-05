@@ -1,38 +1,26 @@
-LEFT OFF
-Fish 44303 card appendage issues. AAAAAAAAAA
-And 51445
-Maybe 44665
-Maye 78620 (look at this one first!)
-Definitely 8266 (good example too along with 44303)
-Definitely 51500 too, that's another good example
-54074 is also a problem but not because of the tag; rather because it has an untucked fin.
-    I guess this is no different from fish who are missing parts of their fins, and we tolerate those.
-64281 has problems with some structure near the fish that isn't a card.
+TODOS FOR THIS WEEK
+Fish-card intersection issues:
+    Fish 44303
+    And 51445
+    Maybe 44665
+    Maye 78620 (look at this one first!)
+    Definitely 8266 (good example too along with 44303)
+    Definitely 51500 too, that's another good example
+    54074 is also a problem but not because of the tag; rather because it has an untucked fin.
+        I guess this is no different from fish who are missing parts of their fins, and we tolerate those.
+    64281 has problems with some structure near the fish that isn't a card.
 Comparing my areas with Joel's to see if I could be wrong?
 Try feat reduction on lda feats?
 Make a confusion matrix, per-class accuracy
 Stratify probability of each top-1 pick. Record accuracy just when confidence is > 95% for ex.
 Weighted average of shapes is possible. Maybe do an animation?
 Find precision/recall/f1 of classifier
-Try using a neural network (not just a silly perceptron, but try that too) for classification.
+Try using a neural network (not just a perceptron, but try that too) for classification.
 If you move back the starting point of the pipeline (filling the database with og images rather than cropped ones) parameterize the padding and use 10% instead of an absolute 10px.
-
-PROJECT DESCRIPTION BRAINSTORMING
-Today's vast, online collections of digitized biological specimens have promising applications, but their metadata is often absent and sometimes erroneous.
-When present and accurate, morphological metadata in particular (specimen lengths, body part positions, etc.) provides valuable insight into species' geography, behaviors, and evolutionary histories.
-Researchers must then compute the metadata for themselves, but it's prohibitively expensive to do it manually, so they must automate.
-This work focuses on automatically extracting metadata from one particular collection of fish specimens.
-We demonstrate image processing techniques for extracting fish outlines, a key morphological feature, and representing those outlines via elliptical Fourier descriptors.
-We also overcome many challenges in upholding data cleanliness, thanks in part to work done in previous publications on metadata extraction.
-The resulting dataset is well suited for a variety of machine learning-based downstream analyses, one of the simplest being classification by genus and/or species.
-
-TODOS FOR THIS WEEK
-Start writing stuff!
+Start writing final report
 Find a target journal/event
 variance pca, does first 30 of 95% = 60%?
 cosine similarity between efds?
-try bigger k in knn. What k should we use for as many samples as we have?
-explicitly deal with knn ties. Try taking the class who has a distance from the sample closest to the average of all distances of the nearest points
 
 NOTES ON THESIS PAPER
 Why outlines (specimen features) are important, in the context of fish
@@ -49,8 +37,8 @@ Need to round up whole data curation process somewhere. Your spring week 2 repor
 
 STILL-RELEVANT NOTES ON BGNN PRESENTATION
 Include the coverage of my dataset and how I arrived at those particular fish. How many species, genuses, etc.? See Spring Week 2 report for info.
-Make tons of graphs; the BGNN people love em!
-Slide ideas: motivations (on Yasin's wishlist), vague scientific/biological questions regarding comparison of species, shapes, changes over time, geography, phenotypical analysis. Also CS-related interest
+Include lots of visuals
+Slide ideas: motivations (on Yasin's wishlist), scientific/biological questions regarding comparison of species, shapes, changes over time, geography, phenotypical analysis. Also CS-related interest
 
 GENERAL AREAS TO LOOK INTO IF TIME PERMITS
 Alignment comparisons
@@ -75,7 +63,7 @@ Outlining using edge detection. We just can't seem to get a closed contour using
 Adapting this pipeline to other image repositories; I just don't have the time, but someone else might.
 
 GENERAL INTERESTING THINGS TO REMEMBER
-The curse of dimensionality - as dimensions increase, everything becomes equidistantl! Especially when the number of samples is less than the number of features.
+The curse of dimensionality - as dimensions increase, everything becomes equidistant! Especially when the number of samples is less than the number of features.
 Ground truth errors? automated methods to detect them
 Voronoi diagrams
 Wavelet fourier descriptors? Just something I've read
