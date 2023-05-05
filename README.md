@@ -51,3 +51,8 @@ Then, you can view their outlines using their `show_reconstruction()` method.
 ## Outstanding issues
 * Morphing animations between fish (not shown in the presentation) are a work in progress. The function `animate_morph_between()` in `inhs_outlining.py` produces a GIF, but it's choppy.
 * There are several fish that are close enough to other objects in the image for their outlines to connect. I have a fix but haven't implemented it yet. Fish 44303 is one example.
+
+## Associated publications
+J. Pepper, J. Greenberg, Y. Bakiş, X. Wang, H. Bart and D. Breen, "Automatic Metadata Generation for Fish Specimen Image Collections," 2021 ACM/IEEE Joint Conference on Digital Libraries (JCDL), 2021, pp. 31-40, doi: [10.1109/JCDL52503.2021.00015](https://doi.org/10.1109/JCDL52503.2021.00015).
+
+Kevin Karnani, Joel Pepper, Yasin Bakis et al. Computational Metadata Generation Methods for Biological Specimen Image Collections, 27 April 2022, PREPRINT (Version 1) available at Research Square <https://doi.org/10.21203/rs.3.rs-1506561/v1>
