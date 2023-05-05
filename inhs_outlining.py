@@ -1,6 +1,9 @@
 from pathlib import Path
 import socket
 from werkzeug.utils import cached_property
+from PIL import Image as PILImage
+import pathlib
+import shutil
 
 from sqlalchemy import LargeBinary, String, Float, create_engine, select
 from sqlalchemy.sql import func
@@ -14,7 +17,6 @@ from sklearn.decomposition import PCA
 from scipy.spatial.distance import directed_hausdorff
 
 import pyefd
-import imageio as iio
 
 
 def showplt():
@@ -90,21 +92,26 @@ def cross(*encodings, weights=None):
 
 
 def animate_morph_between(fish1, fish2, n_frames=50, speed=0.3, num_points=300):
-    gif_name = f"{fish1.id}-to-{fish2.id}-{n_frames}f-{speed}spd.gif"
-    # with iio.get_writer(gif_name, mode='I', fps=12) as gif_writer:
     frames = []
-    for w in np.linspace(0, 1, n_frames):
+    for i, w in enumerate(np.linspace(0, 1, n_frames)):
         efds = cross(fish1.encoding, fish2.encoding, weights=(1 - w, w))
         contour = reconstruct(efds, num_points, (0, 0))
         frame = make_contour_im(contour)
         frames.append(frame)
     frame_dims = np.array([frame.shape for frame in frames])
     frame_dim_max = np.array([np.max(frame_dims[:, 0]), np.max(frame_dims[:, 1])])
+    frame_dir = pathlib.Path(f"./giftemp{fish1.id}to{fish2.id}/")
+    frame_dir.mkdir(exist_ok=True)
     for i, frame in enumerate(frames):
         dy, dx = frame_dim_max - frame.shape
-        frames[i] = cv.copyMakeBorder(
-            frame, top=dy, bottom=dy + (dy % 2), left=dx, right=dx + (dx % 2), borderType=cv.BORDER_CONSTANT, value=0)
-    iio.mimsave(gif_name, frames, duration=speed)
+        padded = cv.copyMakeBorder(frame, top=dy//2, bottom=dy//2 + (dy % 2), left=dx//2, right=dx//2 + (dx % 2),
+                                   borderType=cv.BORDER_CONSTANT, value=0)
+        cv.imwrite(str(frame_dir / f"frame{i}.png"), padded)
+    del frames
+    frames = [PILImage.open(str(imf)).convert('P') for imf in frame_dir.iterdir()]
+    gif_name = f"{fish1.id}-to-{fish2.id}-{n_frames}f-{speed}spd.gif"
+    frames[0].save(gif_name, format="GIF", append_images=frames, save_all=True, duration=500, loop=0, optimize=False)
+    shutil.rmtree(frame_dir)
 
 
 def assert_is_lab_server():
@@ -360,6 +367,3 @@ class Fish(Base):
 
 if __name__ == "__main__":
     pass
-    # f1 = Fish.example_of("Lepomis", "Microlophus")
-    # f2 = Fish.example_of("Esox", "Americanus")
-    # animate_morph_between(f1, f2)

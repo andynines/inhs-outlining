@@ -1,6 +1,4 @@
 LEFT OFF
-Immediately doing: you haven't actually tried classifying normalized EFDs now that you're doing LDA. Write a method for that, remove the first three boys, etc.
-    Appears to have given a slight accuracy boost, but some boys in there might have been flipped
 Fish 44303 card appendage issues. AAAAAAAAAA
 And 51445
 Maybe 44665
