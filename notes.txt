@@ -6,6 +6,7 @@ Maye 78620 (look at this one first!)
 Definitely 8266 (good example too along with 44303)
 Definitely 51500 too, that's another good example
 54074 is also a problem but not because of the tag; rather because it has an untucked fin.
+    I guess this is no different from fish who are missing parts of their fins, and we tolerate those.
 64281 has problems with some structure near the fish that isn't a card.
 Comparing my areas with Joel's to see if I could be wrong?
 Try feat reduction on lda feats?
@@ -56,7 +57,6 @@ Alignment comparisons
 Hierarchical clustering (see Titan lake paper)
 Projections from centroids
 Dynamic time warp analysis of signals. Signals align, fall apart from each other, and then align again There's a package called python-dtw for it.
-Data augmentation via translations, reflections, and dropout
 "Antennae" of catfish create weird components of outline that don't fit the fish well; see 42539 for example.
 Improve outlining by looking at the gradient of the saturation histogram. Maybe the location of the largest difference is the best threshold? Also take into account distance from the bottom mean.
 Modify the contour error metric by using an "interpolating Hausdorff distance"
@@ -66,15 +66,16 @@ Make my own length calculation and compare it to Joel's from his OG paper
 SVD as a dim reduction method?
 Reach out to the  Ecological and Evolutionary Signal-processing and Informatics Laboratory in the ECE dept.
 Data augmentation ideas: 1. random-weight averages of a random number of samples 2. random perturbations of a single sample
+Do another outlining hyperparameter search. Figuring out how to do this in a reasonable amount of time is the hard part.
 
 METHODS/DETAILS WE ARE DECIDEDLY NOT INTERESTED IN
 Zahn-Roskies shape functions
 Eigenshapes
 Outlining using edge detection. We just can't seem to get a closed contour using Canny and the like.
-Adapting this pipeline to other image repositories; we just don't have the time.
+Adapting this pipeline to other image repositories; I just don't have the time, but someone else might.
 
 GENERAL INTERESTING THINGS TO REMEMBER
-The curse of dimensionality - as dimensions increase, everything becomes equidistantly big! Especially when the number of samples is less than the number of features.
+The curse of dimensionality - as dimensions increase, everything becomes equidistantl! Especially when the number of samples is less than the number of features.
 Ground truth errors? automated methods to detect them
 Voronoi diagrams
 Wavelet fourier descriptors? Just something I've read
