@@ -15,12 +15,17 @@ Make a confusion matrix, per-class accuracy
 Stratify probability of each top-1 pick. Record accuracy just when confidence is > 95% for ex.
 Weighted average of shapes is possible. Maybe do an animation?
 Find precision/recall/f1 of classifier
+Try XGBoost
 Try using a neural network (not just a perceptron, but try that too) for classification.
 If you move back the starting point of the pipeline (filling the database with og images rather than cropped ones) parameterize the padding and use 10% instead of an absolute 10px.
 Start writing final report
 Find a target journal/event
 variance pca, does first 30 of 95% = 60%?
 cosine similarity between efds?
+Standard deviations of shapes? There's standard ways of visualizing variations in a shape, apparently.
+Intra-genus/species accuracy
+Modify the dataset you've been working with; maybe lower the threshold for inclusion from 100 fish, or do data augmentation to pull more species in.
+Use an at-least-correct-genus accuracy measure.
 
 NOTES ON THESIS PAPER
 Why outlines (specimen features) are important, in the context of fish
@@ -55,6 +60,7 @@ SVD as a dim reduction method?
 Reach out to the  Ecological and Evolutionary Signal-processing and Informatics Laboratory in the ECE dept.
 Data augmentation ideas: 1. random-weight averages of a random number of samples 2. random perturbations of a single sample
 Do another outlining hyperparameter search. Figuring out how to do this in a reasonable amount of time is the hard part.
+Phylogeny refers to intra variation over time. If we extract dates from these labels, we can explore it.
 
 METHODS/DETAILS WE ARE DECIDEDLY NOT INTERESTED IN
 Zahn-Roskies shape functions
@@ -74,6 +80,7 @@ A nearest centroid classifier actually did a lot better (75% acc) than a KNN (50
 When you normalize EFDs, the first three coefficients will always be 1, 0, 0. So you can remove them from a feature matrix.
 Most high-harmonic fish do genuinely need that many to reconstruct within tolerance. But several are actually screwed up.
 There are the feature efds and the working efds. In order to maximize distinguishability, we may have to make irreversible transformations/normalizations to the efds that don't allow us to reconstruct their outlines.
+Automated landmarking is somewhere on Yasin's wishlist. We apparently already have 2000 landmarks placed manually on 100 species, we'd just need to ask Tulane to see it.
 
 OLD BRAINSTORM ARTIFACTS FROM OUTLINE EXTRACTION DISCUSSIONS
 
