@@ -18,7 +18,13 @@ Create a __Python 3__ virtual environment in the top level of the repository:
 ```
 $ python setup.py
 ```
-This will create a virtual environment, activate it, and install project dependencies.
+This will create a virtual environment and install project dependencies into the environment.
+
+### 3.
+Activate the environment for your session.
+```
+$ source venv/bin/activate # venv\Scripts\activate.bat for Windows ... source venv/Scripts/activate for a bash emulator
+```
 
 ## Reproducing presentation results
 ### 1.
