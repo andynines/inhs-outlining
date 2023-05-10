@@ -16,10 +16,9 @@ wget http://andrewsenin.com/fish.db
 ### 2.
 Create a __Python 3__ virtual environment in the top level of the repository:
 ```
-$ python -m venv venv/
-$ source venv/bin/activate
-(venv) $ pip install -r requirements.txt
+$ python setup.py
 ```
+This will create a virtual environment, activate it, and install project dependencies.
 
 ## Reproducing presentation results
 ### 1.
@@ -47,6 +46,8 @@ You can fetch particular fish in a few different ways:
 >>> fish_5099 = Fish.with_id("5099")
 ```
 Then, you can view their outlines using their `show_reconstruction()` method.
+
+You may also refer to the [outlining demo notebook](outlining_demo.ipynb).
 
 ## Outstanding issues
 * Morphing animations between fish (not shown in the presentation) are a work in progress. The function `animate_morph_between()` in `inhs_outlining.py` produces a GIF, but it's choppy.
