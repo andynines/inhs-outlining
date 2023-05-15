@@ -25,7 +25,6 @@ cosine similarity between efds?
 Standard deviations of shapes? There's standard ways of visualizing variations in a shape, apparently.
 Intra-genus/species accuracy
 Modify the dataset you've been working with; maybe lower the threshold for inclusion from 100 fish, or do data augmentation to pull more species in.
-Use an at-least-correct-genus accuracy measure.
 
 NOTES ON THESIS PAPER
 Why outlines (specimen features) are important, in the context of fish
@@ -61,6 +60,7 @@ Reach out to the  Ecological and Evolutionary Signal-processing and Informatics 
 Data augmentation ideas: 1. random-weight averages of a random number of samples 2. random perturbations of a single sample
 Do another outlining hyperparameter search. Figuring out how to do this in a reasonable amount of time is the hard part.
 Phylogeny refers to intra variation over time. If we extract dates from these labels, we can explore it.
+Create a way of measuring at-least-correct-genus accuracy for classifiers. Note that this is different from just classifying by genus alone.
 
 METHODS/DETAILS WE ARE DECIDEDLY NOT INTERESTED IN
 Zahn-Roskies shape functions

@@ -39,6 +39,15 @@ def angle_between(v1, v2):
     return np.rad2deg(np.arctan2(np.cross(v1, v2), np.dot(v1, v2)))
 
 
+"""
+def bboxCollision():
+    r1x + r1w >= r2x &&
+    r1x <= r2x + r2w &&
+    r1y + r1h >= r2y &&
+    r1y <= r2y + r2h
+"""
+
+
 def make_contour_im(contour, *additional_contours):
     mins = abs(np.min(contour, axis=0))
     maxes = np.max(contour, axis=0)
@@ -302,22 +311,6 @@ class Fish(Base):
         # Remove duplicate successive points
         # We wait until now to remove them because rounding can create more duplicates
         return np.array([outline[i] for i in range(len(outline)) if i == 0 or (outline[i] != outline[i - 1]).any()])
-
-    """
-    @cached_property
-    def breen_features(self):
-        angle_signal = []
-        prev_delta = self.normalized_outline[1] - self.normalized_outline[0]
-        for i, pt in enumerate(self.normalized_outline[:-1]):
-            nextpt = self.normalized_outline[i + 1]
-            delta = nextpt - pt
-            angle_signal.append(angle_between(delta, prev_delta))
-            prev_delta = delta
-        n = len(angle_signal)
-        dft = list(zip(np.fft.fft(angle_signal), n * np.fft.fftfreq(n)))
-        highest_term_freqs = sorted(dft[1:n // 2], key=lambda p: -p[0])[:self.breen_feature_count]
-        return np.round(np.array(highest_term_freqs)[:, 1])
-    """
 
     @cached_property
     def encoding(self):

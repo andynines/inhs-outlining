@@ -4,8 +4,6 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.metrics import top_k_accuracy_score
 from sklearn.model_selection import cross_val_score
 
-from sklearn.svm import SVC
-
 
 def load_mat(mat_file):
     data = np.genfromtxt(mat_file, dtype=str, delimiter=',')
@@ -47,10 +45,4 @@ def run_trial_with(clf, X, Y, top_ks=(1, 3, 5), folds=10):
 
 
 if __name__ == "__main__":
-    X, Y = load_mat("1mm_fifteen_species.csv")
-    Xn = normalize(X)
-    Xr = lda_reduce(Xn, Y)
-    run_trial_with(
-        SVC(random_state=0, kernel='linear', probability=True),
-        Xr, Y,
-    )
+    pass
