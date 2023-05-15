@@ -1,4 +1,5 @@
 TODOS FOR THIS WEEK
+Now that we are loading original images, parameterize padding width.
 Fish-card intersection issues:
     Fish 44303
     And 51445
@@ -12,6 +13,7 @@ Fish-card intersection issues:
 Comparing my areas with Joel's to see if I could be wrong?
 Try feat reduction on lda feats?
 Make a confusion matrix, per-class accuracy
+Make a parallel coordinates plot! Plotly looks best for this. Violin plots aren't bad either but not as useful.
 Stratify probability of each top-1 pick. Record accuracy just when confidence is > 95% for ex.
 Weighted average of shapes is possible. Maybe do an animation?
 Find precision/recall/f1 of classifier
@@ -21,10 +23,10 @@ If you move back the starting point of the pipeline (filling the database with o
 Start writing final report
 Find a target journal/event
 variance pca, does first 30 of 95% = 60%?
-cosine similarity between efds?
+cosine similarity between outline efd vectors?
 Standard deviations of shapes? There's standard ways of visualizing variations in a shape, apparently.
 Intra-genus/species accuracy
-Modify the dataset you've been working with; maybe lower the threshold for inclusion from 100 fish, or do data augmentation to pull more species in.
+Modify the 15-species dataset you've been working with; maybe lower the threshold for inclusion from 100 fish, or do data augmentation to pull more species in.
 
 NOTES ON THESIS PAPER
 Why outlines (specimen features) are important, in the context of fish
