@@ -196,13 +196,17 @@ class Fish(Base):
     id: Mapped[str] = mapped_column(String(50), primary_key=True)
     genus: Mapped[str] = mapped_column(String(50))
     species: Mapped[str] = mapped_column(String(50))
-    image: Mapped[bytes] = mapped_column(LargeBinary)  # = cv.imencode('.jpg', img)[1].tobytes(),
+    image: Mapped[bytes] = mapped_column(LargeBinary)  # = cv.imencode('.jpg', img)[1].tobytes()
     side: Mapped[str] = mapped_column(String(10))
     scale: Mapped[float] = mapped_column(Float)
     fish_bbox_ul_x: Mapped[int] = mapped_column(Integer)
     fish_bbox_ul_y: Mapped[int] = mapped_column(Integer)
     fish_bbox_lr_x: Mapped[int] = mapped_column(Integer)
     fish_bbox_lr_y: Mapped[int] = mapped_column(Integer)
+    label_bbox_ul_x: Mapped[int] = mapped_column(Integer)
+    label_bbox_ul_y: Mapped[int] = mapped_column(Integer)
+    label_bbox_lr_x: Mapped[int] = mapped_column(Integer)
+    label_bbox_lr_y: Mapped[int] = mapped_column(Integer)
 
     def __repr__(self):
         return f"INHS_FISH_{self.id}"
@@ -212,7 +216,12 @@ class Fish(Base):
 
     @property
     def cropped_im(self):
-        return self.original_im[
+        crop = self.original_im.copy()
+        # Black out the info card so if the fish overlaps it, it doesn't become part of the fish's outline
+        # We haven't seen any reason to black out rulers 
+        cv.rectangle(crop, (self.label_bbox_ul_x, self.label_bbox_ul_y),
+                (self.label_bbox_lr_x, self.label_bbox_lr_y), (0, 0, 0), thickness=-1)
+        return crop[
           max(0, self.fish_bbox_ul_y - self.bbox_pad_px): self.fish_bbox_lr_y + self.bbox_pad_px,
           max(0, self.fish_bbox_ul_x - self.bbox_pad_px): self.fish_bbox_lr_x + self.bbox_pad_px,
         ]

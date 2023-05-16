@@ -29,6 +29,8 @@ GitHub cleanup stuff. Does this belong with all the Drexel metadata stuff?
 Await required results list from Dave
 Find all genuses with at least 50 reps and make a dataset with those. Consider augmenting those with less. Make the genus your focus of remaining ML experiments.
 Do comparison of dendrogram clustering (or some hierarchical clustering) with the real biological classes.
+Fix non-manifold outlines. If (non-successive) duplicate points still exist in an outline then prune all the points between the duplicates. See Fish 8266 for an example.
+Allow outline overrides as a function of the fish's properties, either at the id level, or genus/species level. For example, fish 64281 could use a dark std dev multiplier of 1.0 or higher.
 
 NOTES ON THESIS PAPER
 Why outlines (specimen features) are important, in the context of fish
