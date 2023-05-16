@@ -15,7 +15,6 @@ Try feat reduction on lda feats?
 Make a confusion matrix, per-class accuracy
 Make a parallel coordinates plot! Plotly looks best for this. Violin plots aren't bad either but not as useful.
 Stratify probability of each top-1 pick. Record accuracy just when confidence is > 95% for ex.
-Weighted average of shapes is possible. Maybe do an animation?
 Find precision/recall/f1 of classifier
 Try XGBoost
 Try using a neural network (not just a perceptron, but try that too) for classification.
@@ -51,7 +50,7 @@ GENERAL AREAS TO LOOK INTO IF TIME PERMITS
 Alignment comparisons
 Hierarchical clustering (see Titan lake paper)
 Projections from centroids
-Dynamic time warp analysis of signals. Signals align, fall apart from each other, and then align again There's a package called python-dtw for it.
+Dynamic time warp analysis of signals. Signals align, fall apart from each other, and then align again. There's a package called python-dtw for it.
 "Antennae" of catfish create weird components of outline that don't fit the fish well; see 42539 for example.
 Improve outlining by looking at the gradient of the saturation histogram. Maybe the location of the largest difference is the best threshold? Also take into account distance from the bottom mean.
 Modify the contour error metric by using an "interpolating Hausdorff distance"

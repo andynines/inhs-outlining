@@ -101,6 +101,7 @@ def cross(*encodings, weights=None):
 
 
 def animate_morph_between(fish1, fish2, n_frames=50, speed=0.3, num_points=300):
+    # Broken!
     frames = []
     for i, w in enumerate(np.linspace(0, 1, n_frames)):
         efds = cross(fish1.encoding, fish2.encoding, weights=(1 - w, w))
@@ -136,7 +137,6 @@ class Fish(Base):
 
     engine = create_engine("sqlite:///fish.db")
 
-    # breen_feature_count = 40
     spatial_resolution = 40  # The average of all records in fish.db is just under 76 px/cm.
     dark_thresh_mult = 0.5
     close_kern_size = 5
@@ -262,9 +262,9 @@ class Fish(Base):
     @cached_property
     def primary_axis(self):
         """
-        We've already computed this in Pepper, Karnani et. al. But I do it again here using the same method as before
-        because now our masks are more accurate. And since the method relies on a mask, a more accurate mask should
-        yield a more accurate axis. Same goes for area, perimeter, etc.
+        We've already computed this in Pepper, Karnani et. al. But I have my own version using the same method as before
+        because it uses the fish mask, and my masks are more accurate. This is also why I have my own functions for
+        area, perimeter, etc.
         """
         points = np.argwhere(self.mask == 0xff)
         pca = PCA(n_components=2)
