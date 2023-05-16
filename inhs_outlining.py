@@ -261,6 +261,11 @@ class Fish(Base):
 
     @cached_property
     def primary_axis(self):
+        """
+        We've already computed this in Pepper, Karnani et. al. But I do it again here using the same method as before
+        because now our masks are more accurate. And since the method relies on a mask, a more accurate mask should
+        yield a more accurate axis. Same goes for area, perimeter, etc.
+        """
         points = np.argwhere(self.mask == 0xff)
         pca = PCA(n_components=2)
         pca.fit(points)

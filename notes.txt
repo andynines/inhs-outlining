@@ -27,6 +27,7 @@ cosine similarity between outline efd vectors?
 Standard deviations of shapes? There's standard ways of visualizing variations in a shape, apparently.
 Intra-genus/species accuracy
 Modify the 15-species dataset you've been working with; maybe lower the threshold for inclusion from 100 fish, or do data augmentation to pull more species in.
+Find an unsupervised way of generating some embeddings in the descriptor space. I want to turn a knob and watch a fish's fin size vary.
 
 NOTES ON THESIS PAPER
 Why outlines (specimen features) are important, in the context of fish
