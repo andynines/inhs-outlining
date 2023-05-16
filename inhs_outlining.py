@@ -5,7 +5,7 @@ from PIL import Image as PILImage
 import pathlib
 import shutil
 
-from sqlalchemy import LargeBinary, String, Float, create_engine, select
+from sqlalchemy import LargeBinary, String, Float, Integer, create_engine, select
 from sqlalchemy.sql import func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
 
@@ -123,10 +123,6 @@ def animate_morph_between(fish1, fish2, n_frames=50, speed=0.3, num_points=300):
     shutil.rmtree(frame_dir)
 
 
-def assert_is_lab_server():
-    assert socket.gethostname() == "CCI-DX4M513", "Not on lab server"
-
-
 class Base(DeclarativeBase):
     pass
 
@@ -136,7 +132,7 @@ class Fish(Base):
 
     engine = create_engine("sqlite:///fish.db")
 
-    # breen_feature_count = 40
+    bbox_pad_px = 10
     spatial_resolution = 40  # The average of all records in fish.db is just under 76 px/cm.
     dark_thresh_mult = 0.5
     close_kern_size = 5
@@ -149,6 +145,7 @@ class Fish(Base):
     def show_params(cls):
         just = 40
         print(
+            "Bounding box padding pixels:".ljust(just) + f"{cls.bbox_pad_px} px",
             "Spatial resolution:".ljust(just) + f"{cls.spatial_resolution} px/cm",
             "Dark range std multiplier:".ljust(just) + str(cls.dark_thresh_mult),
             "Closing kernel size:".ljust(just) + f"{cls.close_kern_size}x{cls.close_kern_size}",
@@ -201,6 +198,10 @@ class Fish(Base):
     image: Mapped[bytes] = mapped_column(LargeBinary)  # = cv.imencode('.jpg', img)[1].tobytes(),
     side: Mapped[str] = mapped_column(String(10))
     scale: Mapped[float] = mapped_column(Float)
+    fish_bbox_ul_x: Mapped[int] = mapped_column(Integer)
+    fish_bbox_ul_y: Mapped[int] = mapped_column(Integer)
+    fish_bbox_lr_x: Mapped[int] = mapped_column(Integer)
+    fish_bbox_lr_y: Mapped[int] = mapped_column(Integer)
 
     def __repr__(self):
         return f"INHS_FISH_{self.id}"
@@ -208,32 +209,22 @@ class Fish(Base):
     def __str__(self):
         return repr(self)
 
-    @cached_property
+    @property
     def cropped_im(self):
-        """
-        img[
-          max(0, bbox[1] - BBOX_PAD_PX): bbox[3] + BBOX_PAD_PX,
-          max(0, bbox[0] - BBOX_PAD_PX): bbox[2] + BBOX_PAD_PX,
+        return self.original_im[
+          max(0, self.fish_bbox_ul_y - self.bbox_pad_px): self.fish_bbox_lr_y + self.bbox_pad_px,
+          max(0, self.fish_bbox_ul_x - self.bbox_pad_px): self.fish_bbox_lr_x + self.bbox_pad_px,
         ]
-        """
-        nparr = np.frombuffer(self.image, np.uint8)
-        im = cv.imdecode(nparr, cv.IMREAD_COLOR)
-        return cv.cvtColor(im, cv.COLOR_BGR2RGB)
 
-    @cached_property
+    @property
     def saturation_im(self):
         hsv = cv.cvtColor(self.cropped_im, cv.COLOR_RGB2HSV)
         return hsv[:, :, 1]
 
-    @cached_property
+    @property
     def original_im(self):
-        assert_is_lab_server()
-        path_template = f"/usr/local/bgnn/inhs_{{group}}/INHS_FISH_{self.id}.jpg"
-        validation_path = Path(path_template.format(group="validation"))
-        if validation_path.exists():
-            im = cv.imread(validation_path)
-        else:
-            im = cv.imread(Path(path_template.format(group="test")))
+        nparr = np.frombuffer(self.image, np.uint8)
+        im = cv.imdecode(nparr, cv.IMREAD_COLOR)
         return cv.cvtColor(im, cv.COLOR_BGR2RGB)
 
     @cached_property
