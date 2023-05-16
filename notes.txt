@@ -1,4 +1,5 @@
 TODOS FOR THIS WEEK
+Now that we are loading original images, parameterize padding width.
 Fish-card intersection issues:
     Fish 44303
     And 51445
@@ -13,18 +14,21 @@ Comparing my areas with Joel's to see if I could be wrong?
 Try feat reduction on lda feats?
 Make a confusion matrix, per-class accuracy
 Stratify probability of each top-1 pick. Record accuracy just when confidence is > 95% for ex.
-Weighted average of shapes is possible. Maybe do an animation?
 Find precision/recall/f1 of classifier
 Try XGBoost
 Try using a neural network (not just a perceptron, but try that too) for classification.
 If you move back the starting point of the pipeline (filling the database with og images rather than cropped ones) parameterize the padding and use 10% instead of an absolute 10px.
 Start writing final report
-Find a target journal/event
 variance pca, does first 30 of 95% = 60%?
-cosine similarity between efds?
+cosine similarity between outline efd vectors?
 Standard deviations of shapes? There's standard ways of visualizing variations in a shape, apparently.
 Intra-genus/species accuracy
-Modify the dataset you've been working with; maybe lower the threshold for inclusion from 100 fish, or do data augmentation to pull more species in.
+Modify the 15-species dataset you've been working with; maybe lower the threshold for inclusion from 100 fish, or do data augmentation to pull more species in.
+Find an unsupervised way of generating some embeddings in the descriptor space. I want to turn a knob and watch a fish's fin size vary.
+GitHub cleanup stuff. Does this belong with all the Drexel metadata stuff?
+Await required results list from Dave
+Find all genuses with at least 50 reps and make a dataset with those. Consider augmenting those with less. Make the genus your focus of remaining ML experiments.
+Do comparison of dendrogram clustering (or some hierarchical clustering) with the real biological classes.
 
 NOTES ON THESIS PAPER
 Why outlines (specimen features) are important, in the context of fish
@@ -48,7 +52,7 @@ GENERAL AREAS TO LOOK INTO IF TIME PERMITS
 Alignment comparisons
 Hierarchical clustering (see Titan lake paper)
 Projections from centroids
-Dynamic time warp analysis of signals. Signals align, fall apart from each other, and then align again There's a package called python-dtw for it.
+Dynamic time warp analysis of signals. Signals align, fall apart from each other, and then align again. There's a package called python-dtw for it.
 "Antennae" of catfish create weird components of outline that don't fit the fish well; see 42539 for example.
 Improve outlining by looking at the gradient of the saturation histogram. Maybe the location of the largest difference is the best threshold? Also take into account distance from the bottom mean.
 Modify the contour error metric by using an "interpolating Hausdorff distance"
