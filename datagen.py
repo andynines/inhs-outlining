@@ -51,7 +51,7 @@ def collect_frags():
                 labels.append(cols[-1].strip())
     mat = pad_ragged(mat)
     mat = np.concatenate((mat, np.array(labels).reshape(-1, 1)), axis=1)
-    np.savetxt("1mm_fifteen_species.csv", mat, fmt='%s', delimiter=',')
+    np.savetxt("1mm_fifteen_species_new.csv", mat, fmt='%s', delimiter=',')
 
 
 if __name__ == "__main__":
