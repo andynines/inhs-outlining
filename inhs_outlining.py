@@ -1,11 +1,10 @@
-from pathlib import Path
-import socket
+
 from werkzeug.utils import cached_property
 from PIL import Image as PILImage
 import pathlib
 import shutil
 
-from sqlalchemy import LargeBinary, String, Float, create_engine, select
+from sqlalchemy import LargeBinary, String, Float, Integer, create_engine, select
 from sqlalchemy.sql import func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
 
@@ -92,6 +91,7 @@ def cross(*encodings, weights=None):
 
 
 def animate_morph_between(fish1, fish2, n_frames=50, speed=0.3, num_points=300):
+    # Broken!
     frames = []
     for i, w in enumerate(np.linspace(0, 1, n_frames)):
         efds = cross(fish1.encoding, fish2.encoding, weights=(1 - w, w))
@@ -104,7 +104,8 @@ def animate_morph_between(fish1, fish2, n_frames=50, speed=0.3, num_points=300):
     frame_dir.mkdir(exist_ok=True)
     for i, frame in enumerate(frames):
         dy, dx = frame_dim_max - frame.shape
-        padded = cv.copyMakeBorder(frame, top=dy//2, bottom=dy//2 + (dy % 2), left=dx//2, right=dx//2 + (dx % 2),
+        padded = cv.copyMakeBorder(frame, top=dy // 2, bottom=dy // 2 + (dy % 2), left=dx // 2,
+                                   right=dx // 2 + (dx % 2),
                                    borderType=cv.BORDER_CONSTANT, value=0)
         cv.imwrite(str(frame_dir / f"frame{i}.png"), padded)
     del frames
@@ -112,10 +113,6 @@ def animate_morph_between(fish1, fish2, n_frames=50, speed=0.3, num_points=300):
     gif_name = f"{fish1.id}-to-{fish2.id}-{n_frames}f-{speed}spd.gif"
     frames[0].save(gif_name, format="GIF", append_images=frames, save_all=True, duration=500, loop=0, optimize=False)
     shutil.rmtree(frame_dir)
-
-
-def assert_is_lab_server():
-    assert socket.gethostname() == "CCI-DX4M513", "Not on lab server"
 
 
 class Base(DeclarativeBase):
@@ -127,7 +124,7 @@ class Fish(Base):
 
     engine = create_engine("sqlite:///fish.db")
 
-    # breen_feature_count = 40
+    bbox_pad_mult = 0.05
     spatial_resolution = 40  # The average of all records in fish.db is just under 76 px/cm.
     dark_thresh_mult = 0.5
     close_kern_size = 5
@@ -140,6 +137,7 @@ class Fish(Base):
     def show_params(cls):
         just = 40
         print(
+            "Bounding box padding multiple:".ljust(just) + f"{cls.bbox_pad_mult * 100}%",
             "Spatial resolution:".ljust(just) + f"{cls.spatial_resolution} px/cm",
             "Dark range std multiplier:".ljust(just) + str(cls.dark_thresh_mult),
             "Closing kernel size:".ljust(just) + f"{cls.close_kern_size}x{cls.close_kern_size}",
@@ -189,9 +187,19 @@ class Fish(Base):
     id: Mapped[str] = mapped_column(String(50), primary_key=True)
     genus: Mapped[str] = mapped_column(String(50))
     species: Mapped[str] = mapped_column(String(50))
-    image: Mapped[bytes] = mapped_column(LargeBinary)  # = cv.imencode('.jpg', img)[1].tobytes(),
+    image: Mapped[bytes] = mapped_column(LargeBinary)  # = cv.imencode('.jpg', img)[1].tobytes()
     side: Mapped[str] = mapped_column(String(10))
     scale: Mapped[float] = mapped_column(Float)
+
+    fish_bbox_ul_x: Mapped[int] = mapped_column(Integer)
+    fish_bbox_ul_y: Mapped[int] = mapped_column(Integer)
+    fish_bbox_lr_x: Mapped[int] = mapped_column(Integer)
+    fish_bbox_lr_y: Mapped[int] = mapped_column(Integer)
+
+    label_bbox_ul_x: Mapped[int] = mapped_column(Integer)
+    label_bbox_ul_y: Mapped[int] = mapped_column(Integer)
+    label_bbox_lr_x: Mapped[int] = mapped_column(Integer)
+    label_bbox_lr_y: Mapped[int] = mapped_column(Integer)
 
     def __repr__(self):
         return f"INHS_FISH_{self.id}"
@@ -199,42 +207,40 @@ class Fish(Base):
     def __str__(self):
         return repr(self)
 
-    @cached_property
+    @property
     def cropped_im(self):
-        """
-        img[
-          max(0, bbox[1] - BBOX_PAD_PX): bbox[3] + BBOX_PAD_PX,
-          max(0, bbox[0] - BBOX_PAD_PX): bbox[2] + BBOX_PAD_PX,
-        ]
-        """
-        nparr = np.frombuffer(self.image, np.uint8)
-        im = cv.imdecode(nparr, cv.IMREAD_COLOR)
-        return cv.cvtColor(im, cv.COLOR_BGR2RGB)
+        crop = self.original_im.copy()
+        pad_x = round((self.fish_bbox_lr_x - self.fish_bbox_ul_x) * self.bbox_pad_mult)
+        pad_y = round((self.fish_bbox_lr_y - self.fish_bbox_ul_y) * self.bbox_pad_mult)
+        return crop[
+               max(0, self.fish_bbox_ul_y - pad_y): self.fish_bbox_lr_y + pad_y,
+               max(0, self.fish_bbox_ul_x - pad_x): self.fish_bbox_lr_x + pad_x,
+               ]
 
-    @cached_property
+    @property
     def saturation_im(self):
         hsv = cv.cvtColor(self.cropped_im, cv.COLOR_RGB2HSV)
         return hsv[:, :, 1]
 
-    @cached_property
+    @property
     def original_im(self):
-        assert_is_lab_server()
-        path_template = f"/usr/local/bgnn/inhs_{{group}}/INHS_FISH_{self.id}.jpg"
-        validation_path = Path(path_template.format(group="validation"))
-        if validation_path.exists():
-            im = cv.imread(validation_path)
-        else:
-            im = cv.imread(Path(path_template.format(group="test")))
+        nparr = np.frombuffer(self.image, np.uint8)
+        im = cv.imdecode(nparr, cv.IMREAD_COLOR)
         return cv.cvtColor(im, cv.COLOR_BGR2RGB)
 
     @cached_property
     def mask(self):
         otsu_thresh, _ = cv.threshold(self.saturation_im, 0, 0xff, cv.THRESH_BINARY | cv.THRESH_OTSU)
         dark_px = self.saturation_im[self.saturation_im < otsu_thresh].ravel()
-        dark_mean = np.mean(dark_px)
-        dark_std = np.std(dark_px)
+        dark_mean = np.nanmean(dark_px)
+        dark_std = np.nanstd(dark_px)
         new_thresh = dark_mean + self.dark_thresh_mult * dark_std
         _, mask = cv.threshold(self.saturation_im, new_thresh, 0xff, cv.THRESH_BINARY)
+        # Black out the info card so if the fish overlaps it, it doesn't become part of the fish's outline
+        # This cuts a chunk out of the fish, but the morphological closing below will make it look slightly better
+        # We haven't seen any reason to black out rulers
+        mask[self.label_bbox_ul_y-self.fish_bbox_ul_y:self.label_bbox_lr_y-self.fish_bbox_ul_y,
+             self.label_bbox_ul_x-self.fish_bbox_ul_x:self.label_bbox_lr_x-self.fish_bbox_ul_x] = 0
         num_labels, labels, stats, _ = \
             cv.connectedComponentsWithStats(mask, connectivity=8, ltype=cv.CV_32S)
         label_areas = [(i, stats[i, cv.CC_STAT_AREA]) for i in range(num_labels)]
@@ -252,6 +258,11 @@ class Fish(Base):
 
     @cached_property
     def primary_axis(self):
+        """
+        We've already computed this in Pepper, Karnani et. al. But I have my own version using the same method as before
+        because it uses the fish mask, and my masks are more accurate. This is also why I have my own functions for
+        area, perimeter, etc.
+        """
         points = np.argwhere(self.mask == 0xff)
         pca = PCA(n_components=2)
         pca.fit(points)
@@ -303,22 +314,6 @@ class Fish(Base):
         # We wait until now to remove them because rounding can create more duplicates
         return np.array([outline[i] for i in range(len(outline)) if i == 0 or (outline[i] != outline[i - 1]).any()])
 
-    """
-    @cached_property
-    def breen_features(self):
-        angle_signal = []
-        prev_delta = self.normalized_outline[1] - self.normalized_outline[0]
-        for i, pt in enumerate(self.normalized_outline[:-1]):
-            nextpt = self.normalized_outline[i + 1]
-            delta = nextpt - pt
-            angle_signal.append(angle_between(delta, prev_delta))
-            prev_delta = delta
-        n = len(angle_signal)
-        dft = list(zip(np.fft.fft(angle_signal), n * np.fft.fftfreq(n)))
-        highest_term_freqs = sorted(dft[1:n // 2], key=lambda p: -p[0])[:self.breen_feature_count]
-        return np.round(np.array(highest_term_freqs)[:, 1])
-    """
-
     @cached_property
     def encoding(self):
         num_points = self.normalized_outline.shape[0]
@@ -340,6 +335,7 @@ class Fish(Base):
         showim(self.cropped_im)
 
     def show_saturation_hist(self):
+        plt.figure()
         hist = plt.hist(self.saturation_im.ravel(), 256, [0, 256])
         plt.xlabel("Intensity")
         plt.ylabel("Pixels")

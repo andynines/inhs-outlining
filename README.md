@@ -7,7 +7,7 @@
 Ensure you have the latest version of `fish.db`. I've reached my free Git LFS quota, so the copy included here may be old. The latest version has this SHA1 hash:
 ```
 $ sha1sum fish.db
-c541f5aeb8f5d5ad3cf9b01e63c18cb35768fbb5  fish.db
+7a047498773f207c17fbecf0d63fbd9365f973b5  fish.db
 ```
 If your version differs, please download the latest:
 ```
