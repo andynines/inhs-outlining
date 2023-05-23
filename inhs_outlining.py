@@ -1,4 +1,4 @@
-from pathlib import Path
+
 from werkzeug.utils import cached_property
 from PIL import Image as PILImage
 import pathlib
@@ -36,15 +36,6 @@ def angle_between(v1, v2):
     v1 = v1 / np.linalg.norm(v1)
     v2 = v2 / np.linalg.norm(v2)
     return np.rad2deg(np.arctan2(np.cross(v1, v2), np.dot(v1, v2)))
-
-
-"""
-def bboxCollision():
-    r1x + r1w >= r2x &&
-    r1x <= r2x + r2w &&
-    r1y + r1h >= r2y &&
-    r1y <= r2y + r2h
-"""
 
 
 def make_contour_im(contour, *additional_contours):
@@ -246,6 +237,7 @@ class Fish(Base):
         new_thresh = dark_mean + self.dark_thresh_mult * dark_std
         _, mask = cv.threshold(self.saturation_im, new_thresh, 0xff, cv.THRESH_BINARY)
         # Black out the info card so if the fish overlaps it, it doesn't become part of the fish's outline
+        # This cuts a chunk out of the fish, but the morphological closing below will make it look slightly better
         # We haven't seen any reason to black out rulers
         mask[self.label_bbox_ul_y-self.fish_bbox_ul_y:self.label_bbox_lr_y-self.fish_bbox_ul_y,
              self.label_bbox_ul_x-self.fish_bbox_ul_x:self.label_bbox_lr_x-self.fish_bbox_ul_x] = 0

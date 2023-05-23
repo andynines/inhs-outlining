@@ -12,9 +12,13 @@ def load_mat(mat_file):
     return data[:, 2:-1].astype(float), data[:, -1]
 
 
+def drop_invariant_cols(X, inds=None):
+    inds = np.argwhere(np.all(X[..., :] == 0, axis=0))
+    X = np.delete(X, inds, axis=1)
+    return X, inds
+
+
 def standardize(X):
-    zero_col_inds = np.argwhere(np.all(X[..., :] == 0, axis=0))
-    X = np.delete(X, zero_col_inds, axis=1)
     return (X - np.mean(X, axis=0)) / np.std(X, axis=0)
 
 
@@ -22,7 +26,7 @@ def normalize(X):
     Xn = []
     for efds in X:
         xni, trans = pyefd.normalize_efd(efds.reshape(len(efds) // 4, 4), return_transformation=True)
-        Xn.append(xni.flatten()[3:] * (-1 if abs(trans[1]) > np.pi / 12 else 1))
+        Xn.append(xni.flatten()[3:] * (-1 if abs(trans[1]) > 0.25 else 1))
     return np.array(Xn)
 
 
@@ -34,14 +38,15 @@ def pca_reduce(X, Y, n_components=0.99):
     return PCA(random_state=0, n_components=n_components, whiten=False).fit_transform(X, Y)
 
 
-def run_trial_with(clf, X, Y, top_ks=(1, 3, 5), folds=10):
+def make_top_k_scorer(k):
+    return lambda clf, X, Y: top_k_accuracy_score(Y, clf.predict_proba(X), k=k)
+
+
+def run_top_k_cv_trials(clf, X, Y, folds=10, score=make_top_k_scorer(1)):
     print("Model:", clf)
-    for k in top_ks:
-        scores = cross_val_score(clf, X, Y, cv=folds,
-                                 scoring=lambda clf, X, Y: top_k_accuracy_score(Y, clf.predict_proba(X), k=k))
-        print('-' * 5, "TOP", k, '-' * 5)
-        print("acc:   %.1f%%" % (scores.mean() * 100))
-        print("std:   %.1f%%" % (scores.std() * 100))
+    scores = cross_val_score(clf, X, Y, cv=folds, scoring=score)
+    print("acc:   %.1f%%" % (scores.mean() * 100))
+    print("std:   %.1f%%" % (scores.std() * 100))
 
 
 if __name__ == "__main__":

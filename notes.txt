@@ -1,21 +1,19 @@
 TODOS FOR THIS WEEK
-Then, regenerate results now that we're removing labels, that could change accuracy
+Write setup.bat and setup.sh scripts.
 Make a confusion matrix, per-class accuracy
 Stratify probability of each top-1 pick. Record accuracy just when confidence is > 95% for ex.
 Find precision/recall/f1 of classifier
-Try XGBoost hyperparameter tuning
-Try using a neural network (not just a perceptron, but try that too) for classification.
 cosine similarity between outline efd vectors?
 Standard deviations of shapes? There's standard ways of visualizing variations in a shape, apparently.
 Intra-genus/species accuracy
 Modify the 15-species dataset you've been working with; maybe lower the threshold for inclusion from 100 fish, or do data augmentation to pull more species in.
 Find an unsupervised way of generating some embeddings in the descriptor space. I want to turn a knob and watch a fish's fin size vary.
 GitHub cleanup stuff. Does this belong with all the Drexel metadata stuff?
-Await required results list from Dave
 Find all genuses with at least 50 reps and make a dataset with those. Consider augmenting those with less. Make the genus your focus of remaining ML experiments.
 Do comparison of dendrogram clustering (or some hierarchical clustering) with the real biological classes.
 Fix self-intersecting outlines. If (non-successive) duplicate points still exist in an outline then prune all the points between the duplicates. See Fish 8266 for an example.
 Allow outline overrides as a function of the fish's properties, either at the id level, or genus/species level. For example, fish 64281 could use a dark std dev multiplier of 1.0 or higher.
+Do model persistence with joblib (same api as pickle)
 
 NOTES ON THESIS PAPER
 Why outlines (specimen features) are important, in the context of fish
@@ -50,12 +48,14 @@ Data augmentation ideas: 1. random-weight averages of a random number of samples
 Do another outlining hyperparameter search. Figuring out how to do this in a reasonable amount of time is the hard part.
 Phylogeny refers to intra variation over time. If we extract dates from these labels, we can explore it.
 Create a way of measuring at-least-correct-genus accuracy for classifiers. Note that this is different from just classifying by genus alone.
+Revisit hyperparameter tuning of the outline extraction process
 
 METHODS/DETAILS WE ARE DECIDEDLY NOT INTERESTED IN
 Zahn-Roskies shape functions
 Eigenshapes
 Outlining using edge detection. We just can't seem to get a closed contour using Canny and the like.
 Adapting this pipeline to other image repositories; I just don't have the time, but someone else might.
+Restricted Boltzmann Machines as a classifier, as well as any model that can't offer a confidence with its choice
 
 GENERAL INTERESTING THINGS TO REMEMBER
 The curse of dimensionality - as dimensions increase, everything becomes equidistant! Especially when the number of samples is less than the number of features.
@@ -70,6 +70,7 @@ When you normalize EFDs, the first three coefficients will always be 1, 0, 0. So
 Most high-harmonic fish do genuinely need that many to reconstruct within tolerance. But several are actually screwed up.
 There are the feature efds and the working efds. In order to maximize distinguishability, we may have to make irreversible transformations/normalizations to the efds that don't allow us to reconstruct their outlines.
 Automated landmarking is somewhere on Yasin's wishlist. We apparently already have 2000 landmarks placed manually on 100 species, we'd just need to ask Tulane to see it.
+Data standardization just doesn't seem to do anything so long as I'm using LDA. (And it's proper to apply standardization before LDA)
 
 OLD BRAINSTORM ARTIFACTS FROM OUTLINE EXTRACTION DISCUSSIONS
 
