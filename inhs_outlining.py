@@ -43,9 +43,8 @@ def make_contour_im(contour, *additional_contours):
     maxes = np.max(contour, axis=0)
     pad = 2
     im = np.zeros(np.flip(mins + maxes) + 2 * pad)
-    for i, addl in enumerate(additional_contours):
-        c = 0xff / (i + 2)
-        im = cv.drawContours(im, [addl + mins + (pad, pad)], -1, (c, c, c), thickness=1)
+    for addl in additional_contours:
+        im = cv.drawContours(im, [addl + mins + (pad, pad)], -1, (0x7f, 0x7f, 0x7f), thickness=1)
     im = cv.drawContours(im, [contour + mins + (pad, pad)], -1, (0xff, 0xff, 0xff), thickness=1)
     return im
 
@@ -80,21 +79,32 @@ def pad_ragged(mat):
     return np.array(mat)
 
 
-def cross(*encodings, weights=None):
+def cross(fishes, weights=None):
     if weights is None:
-        n = len(encodings)
+        n = len(fishes)
         weights = [1 / n for _ in range(n)]
     weights = np.array(weights).reshape(-1, 1)
-    encoding_mat = pad_ragged([list(efds.ravel()) for efds, _ in encodings])
+    encodings = [fish.encoding[0] for fish in fishes]
+    encoding_mat = pad_ragged([list(efds.ravel()) for efds in encodings])
     result = np.sum(encoding_mat * weights, axis=0)
     return result.reshape(result.shape[0] // 4, 4)
+
+
+def show_std_dev(fishes):
+    mean = cross(fishes).ravel()
+    coeff_stds = np.std(pad_ragged([list(fish.encoding[0].ravel()) for fish in fishes]), axis=0)
+    num_coeffs = len(mean)
+    n = round(np.mean([len(fish.normalized_outline) for fish in fishes]))
+    lower = reconstruct((mean - coeff_stds).reshape(num_coeffs // 4, 4), n, (0, 0))
+    upper = reconstruct((mean + coeff_stds).reshape(num_coeffs // 4, 4), n, (0, 0))
+    show_contour(upper, reconstruct(mean.reshape(num_coeffs // 4, 4), n, (0, 0)), lower)
 
 
 def animate_morph_between(fish1, fish2, n_frames=50, speed=0.3, num_points=300):
     # Broken!
     frames = []
     for i, w in enumerate(np.linspace(0, 1, n_frames)):
-        efds = cross(fish1.encoding, fish2.encoding, weights=(1 - w, w))
+        efds = cross((fish1, fish2), weights=(1 - w, w))
         contour = reconstruct(efds, num_points, (0, 0))
         frame = make_contour_im(contour)
         frames.append(frame)
@@ -362,4 +372,5 @@ class Fish(Base):
 
 
 if __name__ == "__main__":
-    pass
+    nigers = Fish.all_of_species("Esox", "Niger")
+    show_std_dev(nigers)
