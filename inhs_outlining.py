@@ -38,14 +38,17 @@ def angle_between(v1, v2):
     return np.rad2deg(np.arctan2(np.cross(v1, v2), np.dot(v1, v2)))
 
 
-def make_contour_im(contour, *additional_contours):
+def make_contour_im(contour, *additional_contours, colors=None):
+    if colors is None:
+        colors = [(0x7f, 0x7f, 0x7f) for _ in range(len(additional_contours))] + [(0xff, 0xff, 0xff)]
     mins = abs(np.min(contour, axis=0))
     maxes = np.max(contour, axis=0)
     pad = 2
     im = np.zeros(np.flip(mins + maxes) + 2 * pad)
+    citer = iter(colors)
     for addl in additional_contours:
-        im = cv.drawContours(im, [addl + mins + (pad, pad)], -1, (0x7f, 0x7f, 0x7f), thickness=1)
-    im = cv.drawContours(im, [contour + mins + (pad, pad)], -1, (0xff, 0xff, 0xff), thickness=1)
+        im = cv.drawContours(im, [addl + mins + (pad, pad)], -1, next(citer), thickness=1)
+    im = cv.drawContours(im, [contour + mins + (pad, pad)], -1, next(citer), thickness=1)
     return im
 
 
@@ -90,14 +93,12 @@ def cross(fishes, weights=None):
     return result.reshape(result.shape[0] // 4, 4)
 
 
-def show_std_dev(fishes):
-    mean = cross(fishes).ravel()
-    coeff_stds = np.std(pad_ragged([list(fish.encoding[0].ravel()) for fish in fishes]), axis=0)
-    num_coeffs = len(mean)
+def show_variation(fishes):
     n = round(np.mean([len(fish.normalized_outline) for fish in fishes]))
-    lower = reconstruct((mean - coeff_stds).reshape(num_coeffs // 4, 4), n, (0, 0))
-    upper = reconstruct((mean + coeff_stds).reshape(num_coeffs // 4, 4), n, (0, 0))
-    show_contour(upper, reconstruct(mean.reshape(num_coeffs // 4, 4), n, (0, 0)), lower)
+    mean = reconstruct(cross(fishes), n, (0, 0))
+    std = np.std([reconstruct(fish.encoding[0], n, (0, 0)) for fish in fishes], axis=0)
+    std = np.round(std).astype(int)
+    show_contour(mean, mean - std, mean + std)
 
 
 def animate_morph_between(fish1, fish2, n_frames=50, speed=0.3, num_points=300):
@@ -372,5 +373,6 @@ class Fish(Base):
 
 
 if __name__ == "__main__":
-    nigers = Fish.all_of_species("Esox", "Niger")
-    show_std_dev(nigers)
+    pass
+    #nigers = Fish.all_of_species("Esox", "Niger")
+    #show_variation(nigers)

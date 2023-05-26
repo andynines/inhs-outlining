@@ -2,18 +2,13 @@ TODOS FOR THIS WEEK
 Make a confusion matrix, per-class accuracy
 Stratify probability of each top-1 pick. Record accuracy just when confidence is > 95% for ex.
 Find precision/recall/f1 of classifier
-cosine similarity between outline efd vectors?
 Standard deviations of shapes? There's standard ways of visualizing variations in a shape, apparently.
 Intra-genus/species accuracy
-Modify the 15-species dataset you've been working with; maybe lower the threshold for inclusion from 100 fish, or do data augmentation to pull more species in.
-Find an unsupervised way of generating some embeddings in the descriptor space. I want to turn a knob and watch a fish's fin size vary.
-GitHub cleanup stuff. Does this belong with all the Drexel metadata stuff?
 Find all genuses with at least 50 reps and make a dataset with those. Consider augmenting those with less. Make the genus your focus of remaining ML experiments.
-Do comparison of dendrogram clustering (or some hierarchical clustering) with the real biological classes.
-Fix self-intersecting outlines. If (non-successive) duplicate points still exist in an outline then prune all the points between the duplicates. See Fish 8266 for an example.
-Allow outline overrides as a function of the fish's properties, either at the id level, or genus/species level. For example, fish 64281 could use a dark std dev multiplier of 1.0 or higher.
-Do model persistence with joblib (same api as pickle)
+Find an unsupervised way of generating some embeddings in the descriptor space. I want to turn a knob and watch a fish's fin size vary.
+Do comparison of dendrogram clustering (or some hierarchical+unsupervised clustering) with the real biological classes.
 Write setup.bat and setup.sh scripts.
+GitHub cleanup stuff. Does this belong with all the Drexel metadata stuff?
 
 NOTES ON THESIS PAPER
 Why outlines (specimen features) are important, in the context of fish
@@ -47,7 +42,9 @@ Data augmentation ideas: 1. random-weight averages of a random number of samples
 Do another outlining hyperparameter search. Figuring out how to do this in a reasonable amount of time is the hard part.
 Phylogeny refers to intra variation over time. If we extract dates from these labels, we can explore it.
 Create a way of measuring at-least-correct-genus accuracy for classifiers. Note that this is different from just classifying by genus alone.
-Revisit hyperparameter tuning of the outline extraction process
+Fish shape morph GIFs
+Fix self-intersecting outlines. If (non-successive) duplicate points still exist in an outline then prune all the points between the duplicates. See Fish 8266 for an example.
+Allow outline overrides as a function of the fish's properties, either at the id level, or genus/species level. For example, fish 64281 could use a dark std dev multiplier of 1.0 or higher.
 
 METHODS/DETAILS WE ARE DECIDEDLY NOT INTERESTED IN
 Zahn-Roskies shape functions
@@ -71,6 +68,8 @@ Most high-harmonic fish do genuinely need that many to reconstruct within tolera
 There are the feature efds and the working efds. In order to maximize distinguishability, we may have to make irreversible transformations/normalizations to the efds that don't allow us to reconstruct their outlines.
 Automated landmarking is somewhere on Yasin's wishlist. We apparently already have 2000 landmarks placed manually on 100 species, we'd just need to ask Tulane to see it.
 Data standardization just doesn't seem to do anything so long as I'm using LDA. (And it's proper to apply standardization before LDA)
+You can do model persistence with joblib (same api as pickle, just need to pip install it)
+Besides our current error metric, cosine similarity is another means of quantifying outline similarity
 
 OLD BRAINSTORM ARTIFACTS FROM OUTLINE EXTRACTION DISCUSSIONS
 
