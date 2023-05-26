@@ -43,6 +43,7 @@ Create a way of measuring at-least-correct-genus accuracy for classifiers. Note 
 Fish shape morph GIFs
 Fix self-intersecting outlines. If (non-successive) duplicate points still exist in an outline then prune all the points between the duplicates. See Fish 8266 for an example.
 Allow outline overrides as a function of the fish's properties, either at the id level, or genus/species level. For example, fish 64281 could use a dark std dev multiplier of 1.0 or higher.
+Devise an at-least-correct-genus accuracy metric and see how it compares to accuracy when trained on genus alone.
 
 METHODS/DETAILS WE ARE DECIDEDLY NOT INTERESTED IN
 Zahn-Roskies shape functions

@@ -200,10 +200,14 @@ class Fish(Base):
         return cls.all_of_species(genus, species)[0]
 
     @classmethod
+    def all_of_genus(cls, genus):
+        return cls.query(select(cls).where(cls.genus == genus))
+
+    @classmethod
     def all_of_species(cls, genus, species):
         return cls.query(select(cls).where((cls.genus == genus) & (cls.species == species)))
 
-    # IDs aren't purely numeric! Some have underscores in them.
+    # IDs aren't purely numeric! Some have underscores in them, so the column type must be str
     id: Mapped[str] = mapped_column(String(50), primary_key=True)
     genus: Mapped[str] = mapped_column(String(50))
     species: Mapped[str] = mapped_column(String(50))
