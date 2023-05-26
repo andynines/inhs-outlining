@@ -94,7 +94,7 @@ def cross(fishes, weights=None):
 
 
 def synthesize_fish_from(fishes):
-    n = np.random.randint(len(fishes))
+    n = np.random.randint(1, len(fishes))
     np.random.shuffle(fishes)
     choices = fishes[:n]
     weights = np.random.dirichlet(np.ones(n), size=1)
