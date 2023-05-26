@@ -93,7 +93,17 @@ def cross(fishes, weights=None):
     return result.reshape(result.shape[0] // 4, 4)
 
 
+def synthesize_fish_from(fishes):
+    np.random.seed()
+    n = np.random.randint(len(fishes))
+    np.random.shuffle(fishes)
+    choices = fishes[:n]
+    weights = np.random.dirichlet(np.ones(n), size=1)
+    return cross(choices, weights=weights)
+
+
 def show_variation(fishes):
+    # Useless!
     n = round(np.mean([len(fish.normalized_outline) for fish in fishes]))
     mean = reconstruct(cross(fishes), n, (0, 0))
     std = np.std([reconstruct(fish.encoding[0], n, (0, 0)) for fish in fishes], axis=0)
