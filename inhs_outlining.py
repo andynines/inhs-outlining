@@ -180,6 +180,15 @@ class Fish(Base):
         return dict(cls.sesh(lambda s: s.query(cls.genus, func.count(cls.genus)).group_by(cls.genus).all()))
 
     @classmethod
+    def show_fish_per_genus(cls):
+        genus_counts = list(cls.count_fish_per_genus().items())
+        genus_counts.sort(key=lambda p: -p[1])
+        genera, counts = zip(*genus_counts)
+        plt.bar(range(len(genera)), counts, align="center")
+        plt.xticks(range(len(genera)), genera, rotation=45)
+        showplt()
+
+    @classmethod
     def count_unique_species(cls):
         counts = cls.sesh(
             lambda s: s.query(cls.genus, cls.species, func.count(cls.id)).group_by(cls.genus, cls.species).all())
