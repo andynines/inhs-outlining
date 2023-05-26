@@ -94,7 +94,6 @@ def cross(fishes, weights=None):
 
 
 def synthesize_fish_from(fishes):
-    np.random.seed()
     n = np.random.randint(len(fishes))
     np.random.shuffle(fishes)
     choices = fishes[:n]
