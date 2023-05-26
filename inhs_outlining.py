@@ -44,7 +44,9 @@ def make_contour_im(contour, *additional_contours, colors=None):
     mins = abs(np.min(contour, axis=0))
     maxes = np.max(contour, axis=0)
     pad = 2
-    im = np.zeros(np.flip(mins + maxes) + 2 * pad)
+    dim = np.flip(mins + maxes) + 2 * pad
+    dim = np.concatenate((dim, (3,)))
+    im = np.zeros(dim)
     citer = iter(colors)
     for addl in additional_contours:
         im = cv.drawContours(im, [addl + mins + (pad, pad)], -1, next(citer), thickness=1)
@@ -52,9 +54,9 @@ def make_contour_im(contour, *additional_contours, colors=None):
     return im
 
 
-def show_contour(contour, *additional_contours):
-    im = make_contour_im(contour, *additional_contours)
-    showim(im, gray=True)
+def show_contour(contour, *additional_contours, colors=None):
+    im = make_contour_im(contour, *additional_contours, colors=colors)
+    showim(im)
 
 
 def contour_error(contour1, contour2):
@@ -82,13 +84,17 @@ def pad_ragged(mat):
     return np.array(mat)
 
 
+def make_encoding_mat(fishes):
+    encodings = [fish.encoding[0] for fish in fishes]
+    return pad_ragged([list(efds.ravel()) for efds in encodings])
+
+
 def cross(fishes, weights=None):
     if weights is None:
         n = len(fishes)
         weights = [1 / n for _ in range(n)]
     weights = np.array(weights).reshape(-1, 1)
-    encodings = [fish.encoding[0] for fish in fishes]
-    encoding_mat = pad_ragged([list(efds.ravel()) for efds in encodings])
+    encoding_mat = make_encoding_mat(fishes)
     result = np.sum(encoding_mat * weights, axis=0)
     return result.reshape(result.shape[0] // 4, 4)
 
@@ -99,15 +105,6 @@ def synthesize_fish_from(fishes):
     choices = fishes[:n]
     weights = np.random.dirichlet(np.ones(n), size=1)
     return cross(choices, weights=weights)
-
-
-def show_variation(fishes):
-    # Useless!
-    n = round(np.mean([len(fish.normalized_outline) for fish in fishes]))
-    mean = reconstruct(cross(fishes), n, (0, 0))
-    std = np.std([reconstruct(fish.encoding[0], n, (0, 0)) for fish in fishes], axis=0)
-    std = np.round(std).astype(int)
-    show_contour(mean, mean - std, mean + std)
 
 
 def animate_morph_between(fish1, fish2, n_frames=50, speed=0.3, num_points=300):
@@ -157,10 +154,10 @@ class Fish(Base):
     def show_params(cls):
         just = 40
         print(
-            "Bounding box padding multiple:".ljust(just) + f"{cls.bbox_pad_mult * 100}%",
+            "Bounding box padding percentage:".ljust(just) + f"{cls.bbox_pad_mult * 100}%",
             "Spatial resolution:".ljust(just) + f"{cls.spatial_resolution} px/cm",
             "Dark range std multiplier:".ljust(just) + str(cls.dark_thresh_mult),
-            "Closing kernel size:".ljust(just) + f"{cls.close_kern_size}x{cls.close_kern_size}",
+            "Closing kernel size:".ljust(just) + f"{cls.close_kern_size}x{cls.close_kern_size} px",
             "Closing iterations:".ljust(just) + str(cls.close_iters),
             "Scaling interpolation method (CV enum):".ljust(just) + str(cls.scl_interp_method),
             "Reconstruction tolerance:".ljust(just) + f"{cls.reconstruction_tol} px",
@@ -215,6 +212,14 @@ class Fish(Base):
     @classmethod
     def all_of_species(cls, genus, species):
         return cls.query(select(cls).where((cls.genus == genus) & (cls.species == species)))
+
+    @classmethod
+    def contour_area(cls, contour):  # cm^2
+        return cv.contourArea(contour) / cls.spatial_resolution ** 2
+
+    @classmethod
+    def contour_perimeter(cls, contour):  # cm
+        return cv.arcLength(contour, closed=True) / cls.spatial_resolution
 
     # IDs aren't purely numeric! Some have underscores in them, so the column type must be str
     id: Mapped[str] = mapped_column(String(50), primary_key=True)
@@ -274,11 +279,13 @@ class Fish(Base):
         # We haven't seen any reason to black out rulers
         mask[self.label_bbox_ul_y-self.fish_bbox_ul_y:self.label_bbox_lr_y-self.fish_bbox_ul_y,
              self.label_bbox_ul_x-self.fish_bbox_ul_x:self.label_bbox_lr_x-self.fish_bbox_ul_x] = 0
+        # Remove all connected components but the largest two, which will be the fish and the background
         num_labels, labels, stats, _ = \
             cv.connectedComponentsWithStats(mask, connectivity=8, ltype=cv.CV_32S)
         label_areas = [(i, stats[i, cv.CC_STAT_AREA]) for i in range(num_labels)]
         label_areas.sort(key=lambda p: -p[1])
         mask[(labels != label_areas[0][0]) & (labels != label_areas[1][0])] = 0
+        # Perform morphological closing to close holes and smooth edges
         kernel = np.ones((self.close_kern_size, self.close_kern_size), np.uint8)
         mask = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel, iterations=self.close_iters)
         return mask
@@ -309,7 +316,9 @@ class Fish(Base):
         pad = max(height, width)
         adj_dim = (height + 2 * pad, width + 2 * pad)
         result = np.zeros(adj_dim, np.uint8)
+        # Pad image generously so that no parts of the fish get clipped off during rotation
         result[pad: pad + height, pad:pad + width] = self.mask[:, :]
+        # Rotate the fish so it faces straight to the side
         ang = min(
             angle_between(self.primary_axis, np.array([1, 0])),
             angle_between(self.primary_axis, np.array([-1, 0])),
@@ -319,6 +328,7 @@ class Fish(Base):
         result = cv.warpAffine(result, rot, np.flip(adj_dim))
         if self.side == "right":
             result = cv.flip(result, 1)
+        # Normalize image scale to Fish.spatial_resolution
         scale_factor = self.spatial_resolution / self.scale
         result = cv.resize(result, None, fx=scale_factor, fy=scale_factor, interpolation=self.scl_interp_method)
         _, result = cv.threshold(result, 127, 255, cv.THRESH_BINARY)
@@ -326,11 +336,11 @@ class Fish(Base):
 
     @property
     def area(self):  # cm^2
-        return cv.contourArea(self.normalized_outline) / self.spatial_resolution ** 2
+        return self.contour_area(self.normalized_outline)
 
     @property
     def perimeter(self):  # cm
-        return cv.arcLength(self.normalized_outline, closed=True) / self.spatial_resolution
+        return self.contour_perimeter(self.normalized_outline)
 
     @cached_property
     def normalized_outline(self):
@@ -341,6 +351,7 @@ class Fish(Base):
         minx = min([p[0] for p in outline])
         target_origin = min([p for p in outline if p[0] == minx], key=lambda p: p[1])
         outline = np.roll(outline, -outline.index(target_origin), axis=0)
+        # Center outline around (0, 0) and round its coordinates
         outline = np.array(outline) - np.mean(outline, axis=0)
         outline = np.round(outline).astype(int)
         # Remove duplicate successive points
@@ -396,5 +407,3 @@ class Fish(Base):
 
 if __name__ == "__main__":
     pass
-    #nigers = Fish.all_of_species("Esox", "Niger")
-    #show_variation(nigers)
