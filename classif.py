@@ -66,28 +66,17 @@ def show_confusion_mat(clf, Xr, Y, folds=5):
     showplt()
 
 
-def show_variation(fishes):
-    encoding_mat = make_encoding_mat(fishes)
-    ncols = encoding_mat.shape[1]
-    pcs = pca_reduce(encoding_mat)
-    efd_sets = [cross(fishes)]
-    for i in range(3):
-        col = pcs[:, i]
-        efd_sets.append(encoding_mat[np.argmin(col)].reshape(ncols // 4, 4))
-        efd_sets.append(encoding_mat[np.argmax(col)].reshape(ncols // 4, 4))
-    colors = [
-        (0xff, 0x0, 0x0),
-        (0x7f, 0x0, 0x0),
-        (0x0, 0xff, 0x0),
-        (0x0, 0x7f, 0x0),
-        (0x0, 0x0, 0xff),
-        (0x0, 0x0, 0x7f),
-        (0xff, 0xff, 0xff),
-    ]
-    show_contour(*[reconstruct(efds, 300, (0, 0)) for efds in efd_sets], colors=colors)
+def show_variation_better(fishes):
+    n = max(len(fish.normalized_outline) for fish in fishes)
+    all_efds = np.array(pad_ragged([list(fish.encoding[0].ravel()) for fish in fishes]))
+    avg = np.mean(all_efds, axis=0)
+    std = np.sqrt(((all_efds - avg) ** 2).sum(axis=0) / len(fishes))
+    recons = lambda efds: reconstruct(efds.reshape(-1, 4), n, (0, 0))
+    contours = [recons(efds) for efds in [avg, avg + std, avg - std]]
+    show_contour(*contours, colors=[(0xff, 0, 0), (0, 0, 0xff), (0xff, 0xff, 0xff)])
+    # TODO: Change all reshapings for EFD mats to use the inference -1
 
 
 if __name__ == "__main__":
     salmos = Fish.all_of_genus("Salmo")
-    show_variation(salmos)
-
+    show_variation_better(salmos)

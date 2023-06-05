@@ -43,7 +43,7 @@ def make_contour_im(contour, *additional_contours, colors=None):
         colors = [(0x7f, 0x7f, 0x7f) for _ in range(len(additional_contours))] + [(0xff, 0xff, 0xff)]
     mins = abs(np.min(contour, axis=0))
     maxes = np.max(contour, axis=0)
-    pad = 2
+    pad = 10
     dim = np.flip(mins + maxes) + 2 * pad
     dim = np.concatenate((dim, (3,)))
     im = np.zeros(dim)
@@ -51,7 +51,7 @@ def make_contour_im(contour, *additional_contours, colors=None):
     for addl in additional_contours:
         im = cv.drawContours(im, [addl + mins + (pad, pad)], -1, next(citer), thickness=1)
     im = cv.drawContours(im, [contour + mins + (pad, pad)], -1, next(citer), thickness=1)
-    return im
+    return im.astype(int)
 
 
 def show_contour(contour, *additional_contours, colors=None):
