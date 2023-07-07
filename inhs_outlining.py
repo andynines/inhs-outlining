@@ -96,7 +96,7 @@ def cross(fishes, weights=None):
     weights = np.array(weights).reshape(-1, 1)
     encoding_mat = make_encoding_mat(fishes)
     result = np.sum(encoding_mat * weights, axis=0)
-    return result.reshape(result.shape[0] // 4, 4)
+    return result.reshape(-1, 4)
 
 
 def synthesize_fish_from(fishes):
@@ -195,7 +195,7 @@ class Fish(Base):
         showplt()
 
     @classmethod
-    def count_unique_species(cls):
+    def count_fish_per_species(cls):
         counts = cls.sesh(
             lambda s: s.query(cls.genus, cls.species, func.count(cls.id)).group_by(cls.genus, cls.species).all())
         counts.sort(key=lambda count: -count[2])

@@ -27,7 +27,7 @@ def standardize(X):
 def normalize(X):
     Xn = []
     for efds in X:
-        xni, trans = pyefd.normalize_efd(efds.reshape(len(efds) // 4, 4), return_transformation=True)
+        xni, trans = pyefd.normalize_efd(efds.reshape(-1, 4), return_transformation=True)
         Xn.append(xni.flatten()[3:] * (-1 if abs(trans[1]) > 0.25 else 1))
     return np.array(Xn)
 
@@ -74,7 +74,6 @@ def show_variation_better(fishes):
     recons = lambda efds: reconstruct(efds.reshape(-1, 4), n, (0, 0))
     contours = [recons(efds) for efds in [avg, avg + std, avg - std]]
     show_contour(*contours, colors=[(0xff, 0, 0), (0, 0, 0xff), (0xff, 0xff, 0xff)])
-    # TODO: Change all reshapings for EFD mats to use the inference -1
 
 
 if __name__ == "__main__":

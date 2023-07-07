@@ -7,7 +7,7 @@ import random
 
 def get_fifteen_species():
     target_species = [species
-                      for species, count in Fish.count_unique_species().items()
+                      for species, count in Fish.count_fish_per_species().items()
                       if count >= 100]
     target_fish = []
     for species in target_species:
@@ -27,10 +27,6 @@ def get_seven_genera(max_fish_per_genus):
         random.shuffle(all_of_genus)
         target_fish += all_of_genus[:max_fish_per_genus]
     return target_fish
-
-
-def get_salmos():
-    return Fish.all_of_genus("Salmo")
 
 
 def generate_frag(frags_dir, fishes, procindex):
