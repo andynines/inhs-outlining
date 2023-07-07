@@ -1,5 +1,6 @@
 
 from werkzeug.utils import cached_property
+import math
 from PIL import Image as PILImage
 import pathlib
 import shutil
@@ -298,11 +299,6 @@ class Fish(Base):
 
     @cached_property
     def primary_axis(self):
-        """
-        We've already computed this in Pepper, Karnani et. al. But I have my own version using the same method as before
-        because it uses the fish mask, and my masks are more accurate. This is also why I have my own functions for
-        area, perimeter, etc.
-        """
         points = np.argwhere(self.mask == 0xff)
         pca = PCA(n_components=2)
         pca.fit(points)
@@ -400,6 +396,11 @@ class Fish(Base):
 
     def show_reconstruction(self):
         show_contour(self.reconstruction)
+
+    def show_overlay(self):
+        # TODO: Finish this function
+        im = self.cropped_im.copy()
+        #im = cv.drawContours(im, [self.reconstruction ], -1, next(citer), thickness=1)
 
     def save(self):
         cv.imwrite(repr(self) + ".png", cv.cvtColor(self.cropped_im, cv.COLOR_RGB2BGR))

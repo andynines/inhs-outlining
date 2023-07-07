@@ -2,8 +2,10 @@ from inhs_outlining import *
 
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.metrics import top_k_accuracy_score
-from sklearn.model_selection import cross_val_score, cross_val_predict
+from sklearn.model_selection import cross_val_score, cross_val_predict, KFold
 from sklearn.metrics import f1_score, precision_score, recall_score, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
 
 def load_mat(mat_file):
@@ -32,6 +34,18 @@ def normalize(X):
     return np.array(Xn)
 
 
+def synthesize_n_rows_from(real_rows, n):
+    synth_rows = []
+    while n > 0:
+        num_refs = np.random.randint(2, real_rows.shape[0] + 1)
+        np.random.shuffle(real_rows)
+        refs = real_rows[:num_refs, :]
+        weights = np.random.dirichlet(np.ones(num_refs), size=1)
+        synth_rows.append(np.sum(refs * weights.T, axis=0))
+        n -= 1
+    return np.array(synth_rows)
+
+
 def lda_reduce(X, Y):
     return LDA().fit_transform(X, Y)
 
@@ -47,18 +61,38 @@ def make_top_k_scorer(k):
 f1_scorer = lambda clf, X, Y: f1_score(Y, clf.predict(X), average="weighted")
 precision_scorer = lambda clf, X, Y: precision_score(Y, clf.predict(X), average="weighted")
 recall_scorer = lambda clf, X, Y: recall_score(Y, clf.predict(X), average="weighted")
+pipeline = lambda clf: Pipeline([
+    ("standardize", StandardScaler()),
+    ("reduce", LDA()),
+    ("classify", clf)
+])
 
 
 def run_cv_trials(clf, X, Y, folds=5, score=make_top_k_scorer(1)):
     print("Model:", clf)
-    scores = cross_val_score(clf, X, Y, cv=folds, scoring=score)
+    np.random.seed(0)
+    #scores = cross_val_score(pipeline(clf), X, Y, scoring=score, cv=folds)
+    scores = []
+    kf = KFold(n_splits=folds)
+    for (train_inds, test_inds) in kf.split(X):
+        Xtrain, Ytrain = X[train_inds], Y[train_inds]
+        Xmean = np.mean(Xtrain, axis=0)
+        Xstd = np.std(Xtrain, axis=0)
+        Xstd[Xstd == 0] = 1
+        Xtrain = (Xtrain - Xmean) / Xstd
+        lda = LDA()
+        Xtrain = lda.fit_transform(Xtrain, Ytrain)
+        clf.fit(Xtrain, Ytrain)
+        Xtest = ((X[test_inds] - Xmean) / Xstd) @ lda.scalings_
+        scores.append(score(clf, Xtest, Y[test_inds]))
+    scores = np.array(scores)
     print("avg:   %.1f%%" % (scores.mean() * 100))
     print("std:   %.1f%%" % (scores.std() * 100))
 
 
-def show_confusion_mat(clf, Xr, Y, folds=5):
+def show_confusion_mat(clf, X, Y, folds=5):
     # Note that the predictions shown might not match what the classifier would predict in a cross_val_score() trial.
-    y_pred = cross_val_predict(clf, Xr, Y, cv=folds)
+    y_pred = cross_val_predict(pipeline(clf), X, Y, cv=folds)
     classes = np.unique(Y)
     cm = confusion_matrix(Y, y_pred, labels=classes)
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=classes)
