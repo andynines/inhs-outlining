@@ -78,5 +78,4 @@ def show_variation_better(fishes):
 
 
 if __name__ == "__main__":
-    salmos = Fish.all_of_genus("Salmo")
-    show_variation_better(salmos)
+    pass

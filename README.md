@@ -23,22 +23,26 @@ $ source venv/bin/activate
 
 ## Reproducing presentation results
 ### 1.
-Generate the dataset. This takes less than ten minutes on eight, Intel i5 cores at 3.4 GHz:
+Generate the dataset. This shouldn't take more than one half hour on an average processor:
 ```
 python datagen.py
 ```
-This produces the file `1mm_fifteen_species.csv`.
-### 2.
-Run the classification experiment:
-```
-python classif.py
-```
-You may observe higher accuracy than I reported during the presentation. I've since begun normalizing the elliptic Fourier descriptors' scale, which gives a slight accuracy boost.
+This produces the following dataset files in the current directory:
+* `1mm_fifteen_species.csv`
+* `1mm_seven_genera.csv`
+* `1mm_aug_seven_genera.csv`
 
-## General usage examples
-I frequently work in interactive sessions:
+### 2.
+Run the classification experiment by loading your desired dataset in `classification.ipynb` and running all the cells.
+
+## Querying and viewing fish
+To examine fish, you may either launch an interactive session via
 ```
 $ python -i inhs_outlining.py 
+```
+or import the necessary libraries into a script of your own
+```python
+from inhs_outlining import *
 ```
 You can fetch particular fish in a few different ways:
 ```python
@@ -46,10 +50,7 @@ You can fetch particular fish in a few different ways:
 >>> all_cyanelluses = Fish.all_of_species("Lepomis", "Cyanellus")
 >>> fish_5099 = Fish.with_id("5099")
 ```
-Then, you can view their outlines using their `show_reconstruction()` method.
-
-## Outstanding issues
-* Morphing animations between fish (not shown in the presentation) are a work in progress. The function `animate_morph_between()` in `inhs_outlining.py` produces a GIF, but it's choppy.
+Then, you can view their outlines using their `show_reconstruction()` methods.
 
 ## Associated publications
 J. Pepper, J. Greenberg, Y. Bakiş, X. Wang, H. Bart and D. Breen, "Automatic Metadata Generation for Fish Specimen Image Collections," 2021 ACM/IEEE Joint Conference on Digital Libraries (JCDL), 2021, pp. 31-40, doi: [10.1109/JCDL52503.2021.00015](https://doi.org/10.1109/JCDL52503.2021.00015).
