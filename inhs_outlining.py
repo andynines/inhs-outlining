@@ -1,9 +1,5 @@
 
 from werkzeug.utils import cached_property
-import math
-from PIL import Image as PILImage
-import pathlib
-import shutil
 
 from sqlalchemy import LargeBinary, String, Float, Integer, create_engine, select
 from sqlalchemy.sql import func
@@ -88,49 +84,6 @@ def pad_ragged(mat):
 def make_encoding_mat(fishes):
     encodings = [fish.encoding[0] for fish in fishes]
     return pad_ragged([list(efds.ravel()) for efds in encodings])
-
-
-def cross(fishes, weights=None):
-    if weights is None:
-        n = len(fishes)
-        weights = [1 / n for _ in range(n)]
-    weights = np.array(weights).reshape(-1, 1)
-    encoding_mat = make_encoding_mat(fishes)
-    result = np.sum(encoding_mat * weights, axis=0)
-    return result.reshape(-1, 4)
-
-
-def synthesize_fish_from(fishes):
-    n = np.random.randint(1, len(fishes))
-    np.random.shuffle(fishes)
-    choices = fishes[:n]
-    weights = np.random.dirichlet(np.ones(n), size=1)
-    return cross(choices, weights=weights)
-
-
-def animate_morph_between(fish1, fish2, n_frames=50, speed=0.3, num_points=300):
-    # Broken!
-    frames = []
-    for i, w in enumerate(np.linspace(0, 1, n_frames)):
-        efds = cross((fish1, fish2), weights=(1 - w, w))
-        contour = reconstruct(efds, num_points, (0, 0))
-        frame = make_contour_im(contour)
-        frames.append(frame)
-    frame_dims = np.array([frame.shape for frame in frames])
-    frame_dim_max = np.array([np.max(frame_dims[:, 0]), np.max(frame_dims[:, 1])])
-    frame_dir = pathlib.Path(f"./giftemp{fish1.id}to{fish2.id}/")
-    frame_dir.mkdir(exist_ok=True)
-    for i, frame in enumerate(frames):
-        dy, dx = frame_dim_max - frame.shape
-        padded = cv.copyMakeBorder(frame, top=dy // 2, bottom=dy // 2 + (dy % 2), left=dx // 2,
-                                   right=dx // 2 + (dx % 2),
-                                   borderType=cv.BORDER_CONSTANT, value=0)
-        cv.imwrite(str(frame_dir / f"frame{i}.png"), padded)
-    del frames
-    frames = [PILImage.open(str(imf)).convert('P') for imf in frame_dir.iterdir()]
-    gif_name = f"{fish1.id}-to-{fish2.id}-{n_frames}f-{speed}spd.gif"
-    frames[0].save(gif_name, format="GIF", append_images=frames, save_all=True, duration=500, loop=0, optimize=False)
-    shutil.rmtree(frame_dir)
 
 
 class Base(DeclarativeBase):
@@ -396,11 +349,6 @@ class Fish(Base):
 
     def show_reconstruction(self):
         show_contour(self.reconstruction)
-
-    def show_overlay(self):
-        # TODO: Finish this function
-        im = self.cropped_im.copy()
-        #im = cv.drawContours(im, [self.reconstruction ], -1, next(citer), thickness=1)
 
     def save(self):
         cv.imwrite(repr(self) + ".png", cv.cvtColor(self.cropped_im, cv.COLOR_RGB2BGR))

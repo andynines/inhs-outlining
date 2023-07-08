@@ -2,7 +2,7 @@ from inhs_outlining import *
 
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.metrics import top_k_accuracy_score
-from sklearn.model_selection import cross_val_score, cross_val_predict, KFold
+from sklearn.model_selection import cross_val_predict, KFold
 from sklearn.metrics import f1_score, precision_score, recall_score, confusion_matrix, ConfusionMatrixDisplay
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -35,14 +35,13 @@ def normalize(X):
 
 
 def synthesize_n_rows_from(real_rows, n):
-    synth_rows = []
-    while n > 0:
+    synth_rows = np.empty((n, real_rows.shape[1]))
+    for i in range(n):
         num_refs = np.random.randint(2, real_rows.shape[0] + 1)
         np.random.shuffle(real_rows)
         refs = real_rows[:num_refs, :]
         weights = np.random.dirichlet(np.ones(num_refs), size=1)
-        synth_rows.append(np.sum(refs * weights.T, axis=0))
-        n -= 1
+        synth_rows[i] = np.sum(refs * weights.T, axis=0)
     return np.array(synth_rows)
 
 
@@ -68,14 +67,24 @@ pipeline = lambda clf: Pipeline([
 ])
 
 
-def run_cv_trials(clf, X, Y, folds=5, score=make_top_k_scorer(1)):
+def ensure_at_least_n_rows_per_label(X, Y, n):
+    Xsynth = np.empty((0, X.shape[1]))
+    Ysynth = np.empty(0)
+    for label, count in zip(*np.unique(Y, return_counts=True)):
+        rows_needed = max(0, n - count)
+        Xsynth = np.concatenate((Xsynth, synthesize_n_rows_from(X[Y == label], rows_needed)), axis=0)
+        Ysynth = np.concatenate((Ysynth, np.repeat(label, rows_needed)))
+    return np.concatenate((X, Xsynth), axis=0), np.concatenate((Y, Ysynth))
+
+
+def run_cv_trials(clf, X, Y, folds=5, score=make_top_k_scorer(1), min_rows_per_label=0):
     print("Model:", clf)
     np.random.seed(0)
-    #scores = cross_val_score(pipeline(clf), X, Y, scoring=score, cv=folds)
     scores = []
     kf = KFold(n_splits=folds)
     for (train_inds, test_inds) in kf.split(X):
         Xtrain, Ytrain = X[train_inds], Y[train_inds]
+        Xtrain, Ytrain = ensure_at_least_n_rows_per_label(Xtrain, Ytrain, min_rows_per_label)
         Xmean = np.mean(Xtrain, axis=0)
         Xstd = np.std(Xtrain, axis=0)
         Xstd[Xstd == 0] = 1
@@ -111,4 +120,8 @@ def show_variation_better(fishes):
 
 
 if __name__ == "__main__":
-    pass
+    X, Y = load_mat("1mm_aug_seven_genera.csv")
+    Xn = normalize(X)
+    from sklearn.svm import SVC
+    svm = SVC(random_state=0, kernel='linear', C=0.1, probability=True)
+    run_cv_trials(svm, Xn, Y, folds=5, min_rows_per_label=250)

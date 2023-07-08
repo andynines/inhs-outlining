@@ -3,6 +3,7 @@ from inhs_outlining import *
 import multiprocessing as mp
 import pathlib
 import random
+import shutil
 
 
 def get_fifteen_species():

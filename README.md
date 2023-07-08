@@ -36,21 +36,7 @@ This produces the following dataset files in the current directory:
 Run the classification experiment by loading your desired dataset in `classification.ipynb` and running all the cells.
 
 ## Querying and viewing fish
-To examine fish, you may either launch an interactive session via
-```
-$ python -i inhs_outlining.py 
-```
-or import the necessary libraries into a script of your own
-```python
-from inhs_outlining import *
-```
-You can fetch particular fish in a few different ways:
-```python
->>> one_boops = Fish.example_of("Notropis", "Boops")
->>> all_cyanelluses = Fish.all_of_species("Lepomis", "Cyanellus")
->>> fish_5099 = Fish.with_id("5099")
-```
-Then, you can view their outlines using their `show_reconstruction()` methods.
+See `outlining_demo.ipynb` for usage examples.
 
 ## Associated publications
 J. Pepper, J. Greenberg, Y. Bakiş, X. Wang, H. Bart and D. Breen, "Automatic Metadata Generation for Fish Specimen Image Collections," 2021 ACM/IEEE Joint Conference on Digital Libraries (JCDL), 2021, pp. 31-40, doi: [10.1109/JCDL52503.2021.00015](https://doi.org/10.1109/JCDL52503.2021.00015).
