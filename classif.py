@@ -22,10 +22,6 @@ def drop_invariant_cols(X):
     return X, inds
 
 
-def standardize(X):
-    return (X - np.mean(X, axis=0)) / np.std(X, axis=0)
-
-
 def normalize(X):
     Xn = []
     for efds in X:
@@ -43,14 +39,6 @@ def synthesize_n_rows_from(real_rows, n):
         weights = np.random.dirichlet(np.ones(num_refs), size=1)
         synth_rows[i] = np.sum(refs * weights.T, axis=0)
     return np.array(synth_rows)
-
-
-def lda_reduce(X, Y):
-    return LDA().fit_transform(X, Y)
-
-
-def pca_reduce(X, n_components=0.99):
-    return PCA(random_state=0, n_components=n_components, whiten=False).fit_transform(X)
 
 
 def make_top_k_scorer(k):
@@ -109,7 +97,7 @@ def show_confusion_mat(clf, X, Y, folds=5):
     showplt()
 
 
-def show_variation_better(fishes):
+def show_variation(fishes):
     n = max(len(fish.normalized_outline) for fish in fishes)
     all_efds = np.array(pad_ragged([list(fish.encoding[0].ravel()) for fish in fishes]))
     avg = np.mean(all_efds, axis=0)
@@ -120,8 +108,4 @@ def show_variation_better(fishes):
 
 
 if __name__ == "__main__":
-    X, Y = load_mat("1mm_aug_seven_genera.csv")
-    Xn = normalize(X)
-    from sklearn.svm import SVC
-    svm = SVC(random_state=0, kernel='linear', C=0.1, probability=True)
-    run_cv_trials(svm, Xn, Y, folds=5, min_rows_per_label=250)
+    pass
