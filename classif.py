@@ -16,29 +16,12 @@ def load_mat(mat_file):
     return data[:, 2:-1].astype(float), data[:, -1]
 
 
-def drop_invariant_cols(X):
-    inds = np.argwhere(np.all(X[..., :] == 0, axis=0))
-    X = np.delete(X, inds, axis=1)
-    return X, inds
-
-
 def normalize(X):
     Xn = []
     for efds in X:
         xni, trans = pyefd.normalize_efd(efds.reshape(-1, 4), return_transformation=True)
         Xn.append(xni.flatten()[3:] * (-1 if abs(trans[1]) > 0.25 else 1))
     return np.array(Xn)
-
-
-def synthesize_n_rows_from(real_rows, n):
-    synth_rows = np.empty((n, real_rows.shape[1]))
-    for i in range(n):
-        num_refs = np.random.randint(2, real_rows.shape[0] + 1)
-        np.random.shuffle(real_rows)
-        refs = real_rows[:num_refs, :]
-        weights = np.random.dirichlet(np.ones(num_refs), size=1)
-        synth_rows[i] = np.sum(refs * weights.T, axis=0)
-    return np.array(synth_rows)
 
 
 def make_top_k_scorer(k):
@@ -53,6 +36,17 @@ pipeline = lambda clf: Pipeline([
     ("reduce", LDA()),
     ("classify", clf)
 ])
+
+
+def synthesize_n_rows_from(real_rows, n):
+    synth_rows = np.empty((n, real_rows.shape[1]))
+    for i in range(n):
+        num_refs = np.random.randint(2, real_rows.shape[0] + 1)
+        np.random.shuffle(real_rows)
+        refs = real_rows[:num_refs, :]
+        weights = np.random.dirichlet(np.ones(num_refs), size=1)
+        synth_rows[i] = np.sum(refs * weights.T, axis=0)
+    return np.array(synth_rows)
 
 
 def ensure_at_least_n_rows_per_label(X, Y, n):

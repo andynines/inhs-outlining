@@ -30,22 +30,22 @@ def get_seven_genera(max_fish_per_genus):
     return target_fish
 
 
-def generate_frag(frags_dir, fishes, procindex):
-    pathlib.Path(frags_dir).mkdir(exist_ok=True)
-    with open(f"{frags_dir}/{procindex}", 'w') as frag:
-        for fish in fishes:
-            efds, locus = fish.encoding
-            row = np.append(locus, efds.ravel()).astype(str)
-            frag.write(','.join(row) + f",{fish.genus} {fish.species}\n")
-            del fish
-
-
-def generate_frags(frags_dir, fishes):
+def generate_frags(frags_dir, fishes, labeler):
     nproc = mp.cpu_count()
     groups = [list(fish_group) for fish_group in np.array_split(fishes, nproc)]
     processes = []
+
+    def generate_frag(fishes, procindex):
+        pathlib.Path(frags_dir).mkdir(exist_ok=True)
+        with open(f"{frags_dir}/{procindex}", 'w') as frag:
+            for fish in fishes:
+                efds, locus = fish.encoding
+                row = np.append(locus, efds.ravel()).astype(str)
+                frag.write(','.join(row) + f",{labeler(fish)}\n")
+                del fish
+
     for n in range(nproc):
-        p = mp.Process(target=generate_frag, args=(frags_dir, groups[n], n))
+        p = mp.Process(target=generate_frag, args=(groups[n], n))
         processes.append(p)
         p.start()
     for p in processes:
@@ -67,13 +67,13 @@ def build_mat_from_frags(name, frags_dir):
     shutil.rmtree(frags_dir)
 
 
-def generate_dataset(name, fishes):
+def generate_dataset(name, fishes, labeler):
     frags_dir = f"{name}_frags/"
-    generate_frags(frags_dir, fishes)
+    generate_frags(frags_dir, fishes, labeler)
     build_mat_from_frags(name, frags_dir)
 
 
 if __name__ == "__main__":
-    generate_dataset("1mm_fifteen_species", get_fifteen_species())
-    generate_dataset("1mm_seven_genera", get_seven_genera(153))
-    generate_dataset("1mm_aug_seven_genera", get_seven_genera(250))
+    generate_dataset("1mm_fifteen_species_new", get_fifteen_species(), lambda fish: f"{fish.genus} {fish.species}")
+    generate_dataset("1mm_seven_genera_new", get_seven_genera(153), lambda fish: fish.genus)
+    generate_dataset("1mm_aug_seven_genera_new", get_seven_genera(250), lambda fish: fish.genus)
