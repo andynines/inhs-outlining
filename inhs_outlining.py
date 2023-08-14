@@ -350,6 +350,14 @@ class Fish(Base):
     def show_reconstruction(self):
         show_contour(self.reconstruction)
 
+    def show_overlay(self):
+        im = self.cropped_im.copy()
+        contours, _ = cv.findContours(self.mask, cv.RETR_LIST, cv.CHAIN_APPROX_NONE)
+        outline = max(contours, key=cv.contourArea)
+        outline = [(pt[0][0], pt[0][1]) for pt in outline]
+        im = cv.drawContours(im, [np.array(outline)], -1, (0x00, 0xff, 0x00), thickness=2)
+        showim(im)
+
     def save(self):
         cv.imwrite(repr(self) + ".png", cv.cvtColor(self.cropped_im, cv.COLOR_RGB2BGR))
 
