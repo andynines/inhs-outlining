@@ -7,6 +7,8 @@ from sklearn.metrics import f1_score, precision_score, recall_score, confusion_m
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
+from statistics import median
+
 
 def load_mat(mat_file):
     data = np.genfromtxt(mat_file, dtype=str, delimiter=',')
@@ -38,6 +40,10 @@ pipeline = lambda clf: Pipeline([
 ])
 
 
+def calc_target_row_len(X):
+    return int(median(np.count_nonzero(row) for row in X))
+
+
 def synthesize_n_rows_from(real_rows, n):
     synth_rows = np.empty((n, real_rows.shape[1]))
     for i in range(n):
@@ -66,6 +72,8 @@ def run_cv_trials(clf, X, Y, folds=5, score=make_top_k_scorer(1), min_rows_per_l
     kf = KFold(n_splits=folds)
     for (train_inds, test_inds) in kf.split(X):
         Xtrain, Ytrain = X[train_inds], Y[train_inds]
+        target_row_len = calc_target_row_len(Xtrain)
+        Xtrain = Xtrain[:, :target_row_len]
         Xtrain, Ytrain = ensure_at_least_n_rows_per_label(Xtrain, Ytrain, min_rows_per_label)
         Xmean = np.mean(Xtrain, axis=0)
         Xstd = np.std(Xtrain, axis=0)
@@ -74,7 +82,7 @@ def run_cv_trials(clf, X, Y, folds=5, score=make_top_k_scorer(1), min_rows_per_l
         lda = LDA()
         Xtrain = lda.fit_transform(Xtrain, Ytrain)
         clf.fit(Xtrain, Ytrain)
-        Xtest = ((X[test_inds] - Xmean) / Xstd) @ lda.scalings_
+        Xtest = ((X[test_inds, :target_row_len] - Xmean) / Xstd) @ lda.scalings_
         scores.append(score(clf, Xtest, Y[test_inds]))
     scores = np.array(scores)
     print("avg:   %.1f%%" % (scores.mean() * 100))
