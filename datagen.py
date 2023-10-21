@@ -1,9 +1,12 @@
+
 from inhs_outlining import *
 
 import multiprocessing as mp
 import pathlib
 import random
 import shutil
+
+random.seed(0)  # Ensure reproducibility of the resulting datasets
 
 
 def get_fifteen_species():
@@ -76,4 +79,4 @@ def generate_dataset(name, fishes, labeler):
 if __name__ == "__main__":
     generate_dataset("1mm_fifteen_species", get_fifteen_species(), lambda fish: f"{fish.genus} {fish.species}")
     generate_dataset("1mm_seven_genera", get_seven_genera(153), lambda fish: fish.genus)
-    generate_dataset("1mm_aug_seven_genera", get_seven_genera(250), lambda fish: fish.genus)
+    generate_dataset("1mm_imbal_seven_genera", get_seven_genera(250), lambda fish: fish.genus)

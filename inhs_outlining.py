@@ -81,11 +81,6 @@ def pad_ragged(mat):
     return np.array(mat)
 
 
-def make_encoding_mat(fishes):
-    encodings = [fish.encoding[0] for fish in fishes]
-    return pad_ragged([list(efds.ravel()) for efds in encodings])
-
-
 class Base(DeclarativeBase):
     pass
 

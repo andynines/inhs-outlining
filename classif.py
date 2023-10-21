@@ -1,3 +1,4 @@
+
 from inhs_outlining import *
 
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
@@ -7,7 +8,7 @@ from sklearn.metrics import f1_score, precision_score, recall_score, confusion_m
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from statistics import median
+TRUNCATED_ROW_LEN = 30
 
 
 def load_mat(mat_file):
@@ -22,7 +23,7 @@ def normalize(X):
     Xn = []
     for efds in X:
         xni, trans = pyefd.normalize_efd(efds.reshape(-1, 4), return_transformation=True)
-        Xn.append(xni.flatten()[3:] * (-1 if abs(trans[1]) > 0.25 else 1))
+        Xn.append(xni.flatten()[3:] * (1 if abs(trans[1]) > 0.25 else -1))
     return np.array(Xn)
 
 
@@ -38,10 +39,6 @@ pipeline = lambda clf: Pipeline([
     ("reduce", LDA()),
     ("classify", clf)
 ])
-
-
-def calc_target_row_len(X):
-    return int(median(np.count_nonzero(row) for row in X))
 
 
 def synthesize_n_rows_from(real_rows, n):
@@ -72,8 +69,7 @@ def run_cv_trials(clf, X, Y, folds=5, score=make_top_k_scorer(1), min_rows_per_l
     kf = KFold(n_splits=folds)
     for (train_inds, test_inds) in kf.split(X):
         Xtrain, Ytrain = X[train_inds], Y[train_inds]
-        target_row_len = calc_target_row_len(Xtrain)
-        Xtrain = Xtrain[:, :target_row_len]
+        Xtrain = Xtrain[:, :TRUNCATED_ROW_LEN]
         Xtrain, Ytrain = ensure_at_least_n_rows_per_label(Xtrain, Ytrain, min_rows_per_label)
         Xmean = np.mean(Xtrain, axis=0)
         Xstd = np.std(Xtrain, axis=0)
@@ -82,7 +78,7 @@ def run_cv_trials(clf, X, Y, folds=5, score=make_top_k_scorer(1), min_rows_per_l
         lda = LDA()
         Xtrain = lda.fit_transform(Xtrain, Ytrain)
         clf.fit(Xtrain, Ytrain)
-        Xtest = ((X[test_inds, :target_row_len] - Xmean) / Xstd) @ lda.scalings_
+        Xtest = ((X[test_inds, :TRUNCATED_ROW_LEN] - Xmean) / Xstd) @ lda.scalings_
         scores.append(score(clf, Xtest, Y[test_inds]))
     scores = np.array(scores)
     print("avg:   %.1f%%" % (scores.mean() * 100))
